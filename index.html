@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer">
     <title>鸣天ETF交易系统 - 动态批次建仓与止盈清仓版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -28,7 +27,7 @@
                     <h1 class="text-xl md:text-2xl font-bold text-emerald-400">鸣天ETF交易系统 (交易纪律与多批次日记账版)</h1>
                 </div>
                 <p class="text-xs md:text-sm text-slate-400 mt-1">
-                    实时行情 (腾讯证券接口) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
+                    实时行情 (新浪财经接口) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
                 </p>
             </div>
             
@@ -235,26 +234,35 @@
         let activeModalCode = null;
         let countdownSec = 5;
 
-        // 使用腾讯证券接口获取实时行情数据
+        // 使用新浪财经官方接口获取实时行情数据
         function fetchQuotes() {
-            const queryStr = etfData.map(e => e.code.toLowerCase()).join(',');
+            // 组装新浪格式的代码串，如：sh512010,sz159206
+            const queryStr = etfData.map(e => {
+                const prefix = e.code.substring(0, 2).toLowerCase();
+                const numStr = e.code.substring(2).toLowerCase();
+                return prefix + numStr;
+            }).join(',');
+
             const script = document.createElement('script');
-            script.src = `https://qt.gtimg.cn/q=${queryStr}&_=${Date.now()}`;
+            script.src = `https://hq.sinajs.cn/list=${queryStr}&_=${Date.now()}`;
+            script.charset = 'gbk'; // 新浪接口使用 GBK 编码
             
             script.onload = function() {
                 try {
                     etfData.forEach(e => {
-                        const varName = 'v_' + e.code.toLowerCase();
+                        const prefix = e.code.substring(0, 2).toLowerCase();
+                        const numStr = e.code.substring(2).toLowerCase();
+                        const varName = 'hq_str_' + prefix + numStr;
+                        
                         if (window[varName]) {
-                            const parts = window[varName].split('~');
+                            const valStr = window[varName];
+                            const parts = valStr.split(',');
                             if (parts.length > 3) {
-                                const price = parseFloat(parts[3]) || 0;
-                                const yclose = parseFloat(parts[4]) || 0;
+                                const price = parseFloat(parts[3]) || 0; // 当前价
+                                const yclose = parseFloat(parts[2]) || 0; // 昨收价
                                 let pct = 0;
                                 if (price > 0 && yclose > 0) {
                                     pct = ((price - yclose) / yclose) * 100;
-                                } else if (parts[32]) {
-                                    pct = parseFloat(parts[32]) || 0;
                                 }
                                 realQuotes[e.code] = { price, pct };
                             }
@@ -264,7 +272,7 @@
                     renderTable();
                     if (activeModalCode) updateModalContent();
                 } catch (err) {
-                    console.error('解析腾讯行情失败:', err);
+                    console.error('解析新浪行情失败:', err);
                 }
                 if (script.parentNode) script.parentNode.removeChild(script);
             };
