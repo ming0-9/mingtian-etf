@@ -28,7 +28,7 @@
                     <h1 class="text-xl md:text-2xl font-bold text-emerald-400">鸣天ETF交易系统 (交易纪律与多批次日记账版)</h1>
                 </div>
                 <p class="text-xs md:text-sm text-slate-400 mt-1">
-                    实时行情 (JSONP穿透) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
+                    实时行情 (腾讯证券接口) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
                 </p>
             </div>
             
@@ -234,50 +234,46 @@
         let currentSortOrder = 1;
         let activeModalCode = null;
         let countdownSec = 5;
-        let jsonpCallbackIndex = 0;
 
-        // 使用 JSONP 动态脚本注入方式绕过浏览器跨域与本地 file:// 限制
+        // 使用腾讯证券接口获取实时行情数据
         function fetchQuotes() {
-            const secids = etfData.map(e => {
-                const isSh = e.code.toUpperCase().startsWith('SH');
-                return `${isSh ? '1' : '0'}.${e.code.substring(2)}`;
-            }).join(',');
-
-            const callbackName = 'eastmoney_cb_' + (++jsonpCallbackIndex);
+            const queryStr = etfData.map(e => e.code.toLowerCase()).join(',');
             const script = document.createElement('script');
-
-            window[callbackName] = function(data) {
+            script.src = `https://qt.gtimg.cn/q=${queryStr}&_=${Date.now()}`;
+            
+            script.onload = function() {
                 try {
-                    if (data && data.data && data.data.diff) {
-                        data.data.diff.forEach(item => {
-                            const codeNum = item.f12;
-                            const target = etfData.find(e => e.code.endsWith(codeNum));
-                            if (target) {
-                                realQuotes[target.code] = {
-                                    price: parseFloat(item.f2) || 0,
-                                    pct: parseFloat(item.f3) || 0
-                                };
+                    etfData.forEach(e => {
+                        const varName = 'v_' + e.code.toLowerCase();
+                        if (window[varName]) {
+                            const parts = window[varName].split('~');
+                            if (parts.length > 3) {
+                                const price = parseFloat(parts[3]) || 0;
+                                const yclose = parseFloat(parts[4]) || 0;
+                                let pct = 0;
+                                if (price > 0 && yclose > 0) {
+                                    pct = ((price - yclose) / yclose) * 100;
+                                } else if (parts[32]) {
+                                    pct = parseFloat(parts[32]) || 0;
+                                }
+                                realQuotes[e.code] = { price, pct };
                             }
-                        });
-                        document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-                        renderTable();
-                        if (activeModalCode) updateModalContent();
-                    }
-                } catch (e) {
-                    console.error('解析行情数据失败:', e);
+                        }
+                    });
+                    document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                    renderTable();
+                    if (activeModalCode) updateModalContent();
+                } catch (err) {
+                    console.error('解析腾讯行情失败:', err);
                 }
-                // 清理脚本节点与全局回调
                 if (script.parentNode) script.parentNode.removeChild(script);
-                delete window[callbackName];
             };
 
             script.onerror = function() {
                 document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-rose-500";
                 if (script.parentNode) script.parentNode.removeChild(script);
-                delete window[callbackName];
             };
 
-            script.src = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f12&secids=${secids}&cb=${callbackName}&_=${Date.now()}`;
             document.body.appendChild(script);
         }
 
