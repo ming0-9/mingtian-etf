@@ -28,7 +28,7 @@
                     <h1 class="text-xl md:text-2xl font-bold text-emerald-400">鸣天ETF交易系统 (交易纪律与多批次日记账版)</h1>
                 </div>
                 <p class="text-xs md:text-sm text-slate-400 mt-1">
-                    实时行情 | 严格网格建仓、加仓、分批止盈与清仓纪律说明
+                    实时行情 (JSONP穿透) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
                 </p>
             </div>
             
@@ -234,41 +234,51 @@
         let currentSortOrder = 1;
         let activeModalCode = null;
         let countdownSec = 5;
+        let jsonpCallbackIndex = 0;
 
-        // 使用更稳定的东财 JSON API 实时获取行情
-        async function fetchQuotes() {
-            try {
-                // 拼接东财接口所需的 secids (沪市 1., 深市 0.)
-                const secids = etfData.map(e => {
-                    const isSh = e.code.toUpperCase().startsWith('SH');
-                    const market = isSh ? '1' : '0';
-                    const code = e.code.substring(2);
-                    return `${market}.${code}`;
-                }).join(',');
+        // 使用 JSONP 动态脚本注入方式绕过浏览器跨域与本地 file:// 限制
+        function fetchQuotes() {
+            const secids = etfData.map(e => {
+                const isSh = e.code.toUpperCase().startsWith('SH');
+                return `${isSh ? '1' : '0'}.${e.code.substring(2)}`;
+            }).join(',');
 
-                const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f12&secids=${secids}&_=${Date.now()}`;
-                const response = await fetch(url);
-                const data = await response.json();
+            const callbackName = 'eastmoney_cb_' + (++jsonpCallbackIndex);
+            const script = document.createElement('script');
 
-                if (data && data.data && data.data.diff) {
-                    data.data.diff.forEach(item => {
-                        const codeNum = item.f12; // 如 "512010"
-                        const target = etfData.find(e => e.code.endsWith(codeNum));
-                        if (target) {
-                            realQuotes[target.code] = {
-                                price: parseFloat(item.f2) || 0,
-                                pct: parseFloat(item.f3) || 0
-                            };
-                        }
-                    });
-                    document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-                    renderTable();
-                    if (activeModalCode) updateModalContent();
+            window[callbackName] = function(data) {
+                try {
+                    if (data && data.data && data.data.diff) {
+                        data.data.diff.forEach(item => {
+                            const codeNum = item.f12;
+                            const target = etfData.find(e => e.code.endsWith(codeNum));
+                            if (target) {
+                                realQuotes[target.code] = {
+                                    price: parseFloat(item.f2) || 0,
+                                    pct: parseFloat(item.f3) || 0
+                                };
+                            }
+                        });
+                        document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                        renderTable();
+                        if (activeModalCode) updateModalContent();
+                    }
+                } catch (e) {
+                    console.error('解析行情数据失败:', e);
                 }
-            } catch (e) {
-                console.error('实时行情获取失败:', e);
+                // 清理脚本节点与全局回调
+                if (script.parentNode) script.parentNode.removeChild(script);
+                delete window[callbackName];
+            };
+
+            script.onerror = function() {
                 document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-rose-500";
-            }
+                if (script.parentNode) script.parentNode.removeChild(script);
+                delete window[callbackName];
+            };
+
+            script.src = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f12&secids=${secids}&cb=${callbackName}&_=${Date.now()}`;
+            document.body.appendChild(script);
         }
 
         function getActionLogic(c120, cDaily, pct, budget) {
