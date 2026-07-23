@@ -57,8 +57,8 @@
             <div class="bg-card p-4 rounded-xl border border-custom text-xs space-y-2 leading-relaxed">
                 <div class="font-bold text-rose-400 text-sm">🛡️ 止盈、减仓与清仓执行规则</div>
                 <ul class="list-disc list-inside text-slate-300 space-y-1">
-                    <li><b>减1区域（止盈50%）</b>：当 <b>120分钟系数 $\ge 100$</b> 时触发，动量严重超买，减持当前总持仓的 <b>50%</b>。</li>
-                    <li><b>减2区域（清仓/留底）</b>：当 <b>日线系数 $\ge 85$</b> 时触发，中期泡沫见顶，再次减去剩余持仓的 <b>50%</b>（或直接<b>全部清仓</b>）。</li>
+                    <li><b>减1区域（止盈50%）</b>：当 <b>120分钟系数 &ge; 100</b> 时触发，动量严重超买，减持当前总持仓的 <b>50%</b>。</li>
+                    <li><b>减2区域（清仓/留底）</b>：当 <b>日线系数 &ge; 85</b> 时触发，中期泡沫见顶，再次减去剩余持仓的 <b>50%</b>（或直接<b>全部清仓</b>）。</li>
                     <li><b>纪律红线</b>：清仓后的资金强制离场，绝对不在此位置留恋，等待下一个周期轮回。</li>
                 </ul>
             </div>
@@ -334,7 +334,6 @@
                 const logic = getActionLogic(item.c120, item.cDaily, item.pct, budget);
                 const batches = batchPortfolios[item.code] || [];
                 
-                // 计算当前板块的总本金与总市值
                 let totalPrin = 0;
                 let totalMV = 0;
                 batches.forEach(b => {
@@ -378,7 +377,6 @@
                         </td>
                         <td class="p-3 text-xs font-medium text-slate-200">${logic.action}</td>
                         
-                        <!-- 备注+ 按钮列 -->
                         <td class="p-3 text-center">
                             <button onclick="openModal('${item.code}', '${item.name}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-emerald-400 transition shadow">
                                 📝 ${noteSummaryText}
@@ -395,7 +393,6 @@
             if (target) { target[key] = parseFloat(val) || 0; renderTable(); }
         }
 
-        // 弹窗逻辑
         function openModal(code, name) {
             activeModalCode = code;
             document.getElementById('modalTitle').innerText = `${name} (${code}) - 多批次投入与盈亏明细`;
@@ -481,6 +478,11 @@
 
             batchPortfolios[activeModalCode].push({ date, cost, principal });
             localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios));
+            
+            // 触发云端自动同步
+            if (typeof window.saveToCloud === 'function') {
+                window.saveToCloud();
+            }
 
             document.getElementById('newBatchPrice').value = '';
             document.getElementById('newBatchPrincipal').value = '';
@@ -491,6 +493,12 @@
             if (batchPortfolios[code]) {
                 batchPortfolios[code].splice(index, 1);
                 localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios));
+                
+                // 触发云端自动同步
+                if (typeof window.saveToCloud === 'function') {
+                    window.saveToCloud();
+                }
+
                 updateModalContent();
             }
         }
@@ -502,6 +510,65 @@
         }, 1000);
 
         fetchTencentQuotes();
+    </script>
+
+    <!-- GitHub Gist 自动同步脚本（已修复死循环与键名匹配） -->
+    <script>
+    (function() {
+        const GIST_CONFIG = {
+            token: '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',
+            gistId: '9d014412e7f9ea56862152c905f37d05',
+            filename: 'etf-data.json'
+        };
+
+        // 从云端拉取数据
+        async function syncFromCloud() {
+            try {
+                let res = await fetch(`https://api.github.com/gists/${GIST_CONFIG.gistId}`, {
+                    headers: { 'Authorization': `token ${GIST_CONFIG.token}` }
+                });
+                if (res.ok) {
+                    let data = await res.json();
+                    let file = data.files[GIST_CONFIG.filename] || Object.values(data.files)[0];
+                    if (file && file.content) {
+                        localStorage.setItem('mingtian_batches_v1', file.content);
+                        batchPortfolios = JSON.parse(file.content || '{}');
+                        console.log('云端数据同步成功');
+                        renderTable();
+                    }
+                }
+            } catch (e) {
+                console.log('从云端加载数据失败，使用本地数据', e);
+            }
+        }
+
+        // 上传数据到云端
+        window.saveToCloud = async function() {
+            try {
+                let localData = localStorage.getItem('mingtian_batches_v1') || '{}';
+                await fetch(`https://api.github.com/gists/${GIST_CONFIG.gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${GIST_CONFIG.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            [GIST_CONFIG.filename]: { content: localData }
+                        }
+                    })
+                });
+                console.log('已自动同步到云端 Gist');
+            } catch (e) {
+                console.error('保存到云端失败', e);
+            }
+        };
+
+        // 页面加载时执行云端同步
+        window.addEventListener('DOMContentLoaded', () => {
+            syncFromCloud();
+        });
+    })();
     </script>
 </body>
 </html>
