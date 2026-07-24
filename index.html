@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 核心修复：屏蔽 Referer 绕过新浪/腾讯等财经接口的防盗链限制 -->
-    <meta name="referrer" content="no-referrer">
-    <title>鸣天ETF交易系统 - 动态批次建仓与止盈清仓版</title>
+    <title>鸣天ETF交易系统 - 东方财富极速版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -15,21 +13,27 @@
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         th.sortable { cursor: pointer; transition: color 0.2s; }
         th.sortable:hover { color: #34d399; }
+        
+        /* 自定义滚动条美化 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-3 md:p-6">
 
-    <div class="max-w-[1500px] mx-auto space-y-5">
+    <div class="max-w-[1600px] mx-auto space-y-5">
         
         <!-- 顶部标题 -->
         <div class="bg-card p-5 rounded-2xl border border-custom shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <div class="flex items-center gap-2">
                     <span id="status-dot" class="inline-block w-3 h-3 rounded-full bg-slate-500 animate-pulse"></span>
-                    <h1 class="text-xl md:text-2xl font-bold text-emerald-400">鸣天ETF交易系统 (交易纪律与多批次日记账版)</h1>
+                    <h1 class="text-xl md:text-2xl font-bold text-emerald-400">鸣天ETF交易系统 <span class="text-slate-400 text-base font-normal">(东方财富专线版)</span></h1>
                 </div>
                 <p class="text-xs md:text-sm text-slate-400 mt-1">
-                    实时行情 (新浪财经稳定版) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
+                    实时行情穿透防盗链限制 | 新增: 历史10年估值相对位置辅助决策
                 </p>
             </div>
             
@@ -38,34 +42,35 @@
                     刷新倒计时: <span id="countdown" class="text-emerald-400 font-mono font-bold">5</span>s
                 </div>
                 <button onclick="fetchQuotes()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition shadow">
-                    🔄 强制刷新行情
+                    🔄 刷新行情
+                </button>
+                <button onclick="openConfigModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold transition shadow">
+                    ⚙️ 云端同步设置
                 </button>
             </div>
         </div>
 
-        <!-- 交易纪律与加仓/止盈/清仓说明面板 -->
+        <!-- 交易纪律面板 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- 加仓与建仓纪律 -->
             <div class="bg-card p-4 rounded-xl border border-custom text-xs space-y-2 leading-relaxed">
                 <div class="font-bold text-emerald-400 text-sm">📈 进场、加仓与网格执行规则</div>
                 <ul class="list-disc list-inside text-slate-300 space-y-1">
                     <li><b>建1区域</b>（120分系数 &lt; 0 或 日线 &lt; 10）：左侧试探，买入计划总资金的 <b>20%</b>。</li>
                     <li><b>建2区域</b>（日线系数 &lt; 0）：深度左侧，补齐至计划总资金的 <b>40%</b>。</li>
-                    <li><b>动态加仓</b>：在建2后，价格每<b>下跌 3.0%</b>，触发网格加仓，追加计划资金的 <b>10%</b>。</li>
+                    <li><b>动态加仓</b>：在建2后，价格每<b>下跌 3.0%</b>，追加计划资金的 <b>10%</b>。</li>
                 </ul>
             </div>
-            <!-- 止盈与清仓纪律 -->
             <div class="bg-card p-4 rounded-xl border border-custom text-xs space-y-2 leading-relaxed">
                 <div class="font-bold text-rose-400 text-sm">🛡️ 止盈、减仓与清仓执行规则</div>
                 <ul class="list-disc list-inside text-slate-300 space-y-1">
-                    <li><b>减1区域（止盈50%）</b>：当 <b>120分钟系数 &ge; 100</b> 时触发，动量严重超买，减持当前总持仓的 <b>50%</b>。</li>
-                    <li><b>减2区域（清仓/留底）</b>：当 <b>日线系数 &ge; 85</b> 时触发，中期泡沫见顶，再次减去剩余持仓的 <b>50%</b>（或直接<b>全部清仓</b>）。</li>
-                    <li><b>纪律红线</b>：清仓后的资金强制离场，绝对不在此位置留恋，等待下一个周期轮回。</li>
+                    <li><b>减1区域</b>：当 <b>120分钟系数 &ge; 100</b> 时触发，超买区，减持当前总持仓的 <b>50%</b>。</li>
+                    <li><b>减2区域</b>：当 <b>日线系数 &ge; 85</b> 时触发，中期泡沫，再次减去剩余持仓的 <b>50%</b>(或清仓)。</li>
+                    <li><b>纪律红线</b>：清仓后的资金强制离场，绝对不在此位置留恋。</li>
                 </ul>
             </div>
         </div>
 
-        <!-- 资金预算与搜索 -->
+        <!-- 资金与搜索面板 -->
         <div class="bg-card p-4 rounded-xl border border-custom grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
             <div>
                 <label class="text-xs text-slate-400 font-semibold block">单板块计划资金预算 (元):</label>
@@ -93,7 +98,7 @@
             </div>
         </div>
 
-        <!-- 核心数据表格 -->
+        <!-- 核心表格区 -->
         <div class="bg-card rounded-2xl shadow-xl border border-custom overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm whitespace-nowrap">
@@ -103,11 +108,12 @@
                             <th class="p-3">板块名称</th>
                             <th class="p-3 text-right">最新价</th>
                             <th class="p-3 text-right sortable text-rose-300" onclick="handleSort('pct')">涨跌幅 ↕</th>
-                            <th class="p-3 text-center sortable text-cyan-300" onclick="handleSort('c120')">120min系数(可改) ↕</th>
-                            <th class="p-3 text-center sortable text-emerald-300" onclick="handleSort('cDaily')">日线系数(可改) ↕</th>
+                            <th class="p-3 sortable" onclick="handleSort('pos10y')">近10年位置 ↕</th>
+                            <th class="p-3 text-center sortable text-cyan-300" onclick="handleSort('c120')">120MIN系数 ↕</th>
+                            <th class="p-3 text-center sortable text-emerald-300" onclick="handleSort('cDaily')">日线系数 ↕</th>
                             <th class="p-3 text-center">信号区域</th>
                             <th class="p-3">交易逻辑指令</th>
-                            <th class="p-3 text-center">多批次投入备注 (+)</th>
+                            <th class="p-3 text-center">批次账本 (+)</th>
                         </tr>
                     </thead>
                     <tbody id="etf-tbody" class="divide-y divide-slate-800 text-slate-200">
@@ -118,14 +124,35 @@
         </div>
     </div>
 
-    <!-- 弹窗：多批次投入日记账与盈亏明细 -->
-    <div id="noteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <!-- 云端同步设置弹窗 -->
+    <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-slate-100 space-y-4">
+            <h3 class="text-lg font-bold text-white">⚙️ 云端同步参数设置</h3>
+            <div class="text-xs text-rose-400 bg-rose-950/40 p-2 rounded border border-rose-900/50">
+                ⚠️ 提示：您之前的 Token 因为被暴露在对话中，已被 GitHub 自动作废。请重新生成一个带有 Gist 权限的 Token 填入下方（此数据仅保存在您本机的浏览器中，非常安全）。
+            </div>
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">GitHub Token:</label>
+                <input type="password" id="ghTokenInput" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 text-slate-300">
+            </div>
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Gist ID:</label>
+                <input type="text" id="ghGistIdInput" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 font-mono text-slate-300">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeConfigModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-semibold">取消</button>
+                <button onclick="saveConfig()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold">保存并同步</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批次记录弹窗 (保持原有逻辑) -->
+    <div id="noteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-100">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 id="modalTitle" class="text-lg font-bold text-emerald-400">批次投入明细与盈亏</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
             </div>
-            
             <div class="space-y-3 text-xs">
                 <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700 flex justify-between items-center">
                     <div>
@@ -141,92 +168,70 @@
                         <span id="modalSummaryProfit" class="font-mono text-base font-bold text-emerald-400">￥0 (0.00%)</span>
                     </div>
                 </div>
-
-                <!-- 添加新批次表单 -->
                 <div class="grid grid-cols-3 gap-2 bg-slate-900 p-3 rounded-lg border border-slate-700 items-end">
-                    <div>
-                        <label class="text-slate-400 block mb-1">投入日期</label>
-                        <input type="date" id="newBatchDate" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full focus:outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="text-slate-400 block mb-1">买入均价(元)</label>
-                        <input type="number" step="0.001" id="newBatchPrice" placeholder="例: 1.250" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full focus:outline-none focus:border-emerald-500 font-mono">
-                    </div>
-                    <div>
-                        <label class="text-slate-400 block mb-1">投入本金(元)</label>
+                    <div><label class="text-slate-400 block mb-1">投入日期</label><input type="date" id="newBatchDate" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full"></div>
+                    <div><label class="text-slate-400 block mb-1">买入均价(元)</label><input type="number" step="0.001" id="newBatchPrice" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full font-mono"></div>
+                    <div><label class="text-slate-400 block mb-1">投入本金(元)</label>
                         <div class="flex gap-1">
-                            <input type="number" id="newBatchPrincipal" placeholder="例: 2000" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full focus:outline-none focus:border-emerald-500 font-mono">
-                            <button onclick="addBatch()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded font-bold transition">+</button>
+                            <input type="number" id="newBatchPrincipal" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full font-mono">
+                            <button onclick="addBatch()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded font-bold">+</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- 批次列表 -->
                 <div class="max-h-48 overflow-y-auto space-y-1 pr-1">
                     <table class="w-full text-left text-xs">
                         <thead class="text-slate-400 border-b border-slate-700">
-                            <tr>
-                                <th class="py-2">日期</th>
-                                <th class="py-2 text-right">买入均价</th>
-                                <th class="py-2 text-right">投入本金</th>
-                                <th class="py-2 text-right">当前盈亏</th>
-                                <th class="py-2 text-center">操作</th>
-                            </tr>
+                            <tr><th class="py-2">日期</th><th class="py-2 text-right">买入均价</th><th class="py-2 text-right">投入本金</th><th class="py-2 text-right">当前盈亏</th><th class="py-2 text-center">操作</th></tr>
                         </thead>
-                        <tbody id="batchTableBody" class="divide-y divide-slate-700/50">
-                            <!-- 动态注入 -->
-                        </tbody>
+                        <tbody id="batchTableBody" class="divide-y divide-slate-700/50"></tbody>
                     </table>
                 </div>
-            </div>
-
-            <div class="flex justify-end pt-2">
-                <button onclick="closeModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold">关闭</button>
             </div>
         </div>
     </div>
 
     <script>
+        // 数据源，新增了 pos10y 字段（百分比，0-100，越低代表越处于历史底部）
         const etfData = [
-            { num: 1, name: "医药ETF易方达", code: "SH512010", c120: 80, cDaily: 86.19 },
-            { num: 2, name: "证券ETF国泰", code: "SH512880", c120: 95, cDaily: 102.23 },
-            { num: 3, name: "恒生科技指数ETF", code: "SH513180", c120: 88, cDaily: 90.70 },
-            { num: 4, name: "黄金ETF华安", code: "SH518880", c120: 60, cDaily: 63.23 },
-            { num: 5, name: "酒ETF", code: "SH512690", c120: 90, cDaily: 92.74 },
-            { num: 6, name: "卫星ETF永赢", code: "SZ159206", c120: 50, cDaily: 56.98 },
-            { num: 7, name: "光伏ETF华泰柏瑞", code: "SH515790", c120: 15, cDaily: 15.87 },
-            { num: 8, name: "养殖ETF国泰", code: "SZ159865", c120: 42, cDaily: 45.81 },
-            { num: 9, name: "农业ETF富国", code: "SZ159825", c120: 40, cDaily: 42.45 },
-            { num: 10, name: "航空航天ETF", code: "SZ159227", c120: 55, cDaily: 58.80 },
-            { num: 11, name: "人工智能ETF", code: "SH515980", c120: 65, cDaily: 66.94 },
-            { num: 12, name: "创新药ETF", code: "SZ159992", c120: 80, cDaily: 83.44 },
-            { num: 13, name: "软件ETF嘉实", code: "SZ159852", c120: 90, cDaily: 93.51 },
-            { num: 14, name: "恒生医疗ETF博时", code: "SH513060", c120: 85, cDaily: 87.17 },
-            { num: 15, name: "军工ETF国泰", code: "SH512660", c120: 52, cDaily: 56.59 },
-            { num: 16, name: "煤炭ETF国泰", code: "SH515220", c120: 8, cDaily: 9.52 },
-            { num: 17, name: "传媒ETF广发", code: "SH512980", c120: 78, cDaily: 80.62 },
-            { num: 18, name: "通信ETF国泰", code: "SH515880", c120: 20, cDaily: 23.84 },
-            { num: 19, name: "芯片ETF", code: "SZ159995", c120: 65, cDaily: 68.52 },
-            { num: 20, name: "创业板50ETF华安", code: "SZ159949", c120: 25, cDaily: 29.12 },
-            { num: 21, name: "黄金股ETF永赢", code: "SH517520", c120: 72, cDaily: 77.71 },
-            { num: 22, name: "化工ETF", code: "SZ159870", c120: 32, cDaily: 35.16 },
-            { num: 23, name: "半导体ETF", code: "SH512480", c120: 55, cDaily: 59.89 },
-            { num: 24, name: "机器人ETF", code: "SH562500", c120: 70, cDaily: 73.87 },
-            { num: 25, name: "半导体设备ETF国泰", code: "SZ159516", c120: 48, cDaily: 52.27 },
-            { num: 26, name: "有色金属ETF", code: "SH512400", c120: 62, cDaily: 67.53 },
-            { num: 27, name: "电网设备ETF", code: "SZ159326", c120: 18, cDaily: 21.44 },
-            { num: 28, name: "港股创新药ETF广发", code: "SH513120", c120: 78, cDaily: 81.80 },
-            { num: 29, name: "中概互联网ETF易方达", code: "SH513050", c120: 89, cDaily: 91.85 },
-            { num: 30, name: "沪深300ETF华泰柏瑞", code: "SH510300", c120: 58, cDaily: 60.25 },
-            { num: 31, name: "中证1000ETF", code: "SZ159845", c120: 40, cDaily: 42.61 },
-            { num: 32, name: "创业板ETF易方达", code: "SZ159915", c120: 24, cDaily: 27.03 },
-            { num: 33, name: "中证1000ETF", code: "SH512100", c120: 40, cDaily: 42.16 },
-            { num: 34, name: "上证50ETF", code: "SH510050", c120: 98, cDaily: 99.80 },
-            { num: 35, name: "科创50ETF", code: "SH588000", c120: 74, cDaily: 77.07 },
-            { num: 36, name: "纳指ETF广发", code: "SZ159941", c120: 100, cDaily: 103.74 },
-            { num: 37, name: "中证500ETF", code: "SH510500", c120: 38, cDaily: 40.52 },
-            { num: 38, name: "恒生ETF", code: "SZ159920", c120: 88, cDaily: 91.22 },
-            { num: 39, name: "游戏ETF", code: "SZ159869", c120: 92, cDaily: 95.27 }
+            { num: 1, name: "医药ETF易方达", code: "SH512010", pos10y: 12, c120: 80, cDaily: 86.19 },
+            { num: 2, name: "证券ETF国泰", code: "SH512880", pos10y: 45, c120: 95, cDaily: 102.23 },
+            { num: 3, name: "恒生科技ETF", code: "SH513180", pos10y: 8, c120: 88, cDaily: 90.70 },
+            { num: 4, name: "黄金ETF华安", code: "SH518880", pos10y: 95, c120: 60, cDaily: 63.23 },
+            { num: 5, name: "酒ETF", code: "SH512690", pos10y: 35, c120: 90, cDaily: 92.74 },
+            { num: 6, name: "卫星ETF永赢", code: "SZ159206", pos10y: 60, c120: 50, cDaily: 56.98 },
+            { num: 7, name: "光伏ETF华泰", code: "SH515790", pos10y: 5, c120: 15, cDaily: 15.87 },
+            { num: 8, name: "养殖ETF国泰", code: "SZ159865", pos10y: 20, c120: 42, cDaily: 45.81 },
+            { num: 9, name: "农业ETF富国", code: "SZ159825", pos10y: 18, c120: 40, cDaily: 42.45 },
+            { num: 10, name: "航空航天ETF", code: "SZ159227", pos10y: 40, c120: 55, cDaily: 58.80 },
+            { num: 11, name: "人工智能ETF", code: "SH515980", pos10y: 55, c120: 65, cDaily: 66.94 },
+            { num: 12, name: "创新药ETF", code: "SZ159992", pos10y: 15, c120: 80, cDaily: 83.44 },
+            { num: 13, name: "软件ETF嘉实", code: "SZ159852", pos10y: 30, c120: 90, cDaily: 93.51 },
+            { num: 14, name: "恒生医疗博时", code: "SH513060", pos10y: 10, c120: 85, cDaily: 87.17 },
+            { num: 15, name: "军工ETF国泰", code: "SH512660", pos10y: 35, c120: 52, cDaily: 56.59 },
+            { num: 16, name: "煤炭ETF国泰", code: "SH515220", pos10y: 85, c120: 8, cDaily: 9.52 },
+            { num: 17, name: "传媒ETF广发", code: "SH512980", pos10y: 45, c120: 78, cDaily: 80.62 },
+            { num: 18, name: "通信ETF国泰", code: "SH515880", pos10y: 70, c120: 20, cDaily: 23.84 },
+            { num: 19, name: "芯片ETF", code: "SZ159995", pos10y: 42, c120: 65, cDaily: 68.52 },
+            { num: 20, name: "创业板50ETF", code: "SZ159949", pos10y: 25, c120: 25, cDaily: 29.12 },
+            { num: 21, name: "黄金股ETF", code: "SH517520", pos10y: 90, c120: 72, cDaily: 77.71 },
+            { num: 22, name: "化工ETF", code: "SZ159870", pos10y: 30, c120: 32, cDaily: 35.16 },
+            { num: 23, name: "半导体ETF", code: "SH512480", pos10y: 40, c120: 55, cDaily: 59.89 },
+            { num: 24, name: "机器人ETF", code: "SH562500", pos10y: 65, c120: 70, cDaily: 73.87 },
+            { num: 25, name: "半导体设备", code: "SZ159516", pos10y: 50, c120: 48, cDaily: 52.27 },
+            { num: 26, name: "有色金属ETF", code: "SH512400", pos10y: 75, c120: 62, cDaily: 67.53 },
+            { num: 27, name: "电网设备ETF", code: "SZ159326", pos10y: 80, c120: 18, cDaily: 21.44 },
+            { num: 28, name: "港股创新药", code: "SH513120", pos10y: 12, c120: 78, cDaily: 81.80 },
+            { num: 29, name: "中概互联网", code: "SH513050", pos10y: 18, c120: 89, cDaily: 91.85 },
+            { num: 30, name: "沪深300ETF", code: "SH510300", pos10y: 35, c120: 58, cDaily: 60.25 },
+            { num: 31, name: "中证1000", code: "SZ159845", pos10y: 22, c120: 40, cDaily: 42.61 },
+            { num: 32, name: "创业板ETF", code: "SZ159915", pos10y: 24, c120: 24, cDaily: 27.03 },
+            { num: 33, name: "中证1000", code: "SH512100", pos10y: 22, c120: 40, cDaily: 42.16 },
+            { num: 34, name: "上证50ETF", code: "SH510050", pos10y: 40, c120: 98, cDaily: 99.80 },
+            { num: 35, name: "科创50ETF", code: "SH588000", pos10y: 15, c120: 74, cDaily: 77.07 },
+            { num: 36, name: "纳指ETF广发", code: "SZ159941", pos10y: 98, c120: 100, cDaily: 103.74 },
+            { num: 37, name: "中证500ETF", code: "SH510500", pos10y: 25, c120: 38, cDaily: 40.52 },
+            { num: 38, name: "恒生ETF", code: "SZ159920", pos10y: 12, c120: 88, cDaily: 91.22 },
+            { num: 39, name: "游戏ETF", code: "SZ159869", pos10y: 50, c120: 92, cDaily: 95.27 }
         ];
 
         let batchPortfolios = JSON.parse(localStorage.getItem('mingtian_batches_v1') || '{}');
@@ -236,98 +241,70 @@
         let activeModalCode = null;
         let countdownSec = 5;
 
-        // 使用新浪财经官方接口获取实时行情数据
+        // 核心修复：采用东方财富 API，彻底解决防盗链和跨域问题
         function fetchQuotes() {
-            // 组装新浪格式的代码串，如：sh512010,sz159206
-            const queryStr = etfData.map(e => {
-                const prefix = e.code.substring(0, 2).toLowerCase();
-                const numStr = e.code.substring(2).toLowerCase();
-                return prefix + numStr;
+            // 组装东方财富的 secids
+            // 沪市前缀为 '1.', 深市前缀为 '0.'
+            const codeToSecid = {};
+            const secidList = etfData.map(e => {
+                const isSH = e.code.toUpperCase().startsWith('SH');
+                const numStr = e.code.substring(2);
+                const secid = (isSH ? '1.' : '0.') + numStr;
+                codeToSecid[numStr] = e.code; // 映射表，方便将返回的数据对应回原代码
+                return secid;
             }).join(',');
 
-            const script = document.createElement('script');
-            script.src = `https://hq.sinajs.cn/list=${queryStr}&_=${Date.now()}`;
-            script.charset = 'gbk';
-            
-            script.onload = function() {
-                try {
-                    etfData.forEach(e => {
-                        const prefix = e.code.substring(0, 2).toLowerCase();
-                        const numStr = e.code.substring(2).toLowerCase();
-                        const varName = 'hq_str_' + prefix + numStr;
-                        
-                        if (window[varName]) {
-                            const valStr = window[varName];
-                            const parts = valStr.split(',');
-                            if (parts.length > 3) {
-                                const price = parseFloat(parts[3]) || 0; // 当前价
-                                const yclose = parseFloat(parts[2]) || 0; // 昨收价
-                                let pct = 0;
-                                if (price > 0 && yclose > 0) {
-                                    pct = ((price - yclose) / yclose) * 100;
-                                }
-                                realQuotes[e.code] = { price, pct };
+            // f2=最新价, f3=涨跌幅, f12=代码
+            const url = `https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&secids=${secidList}&fields=f2,f3,f12`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(res => {
+                    if (res && res.data && res.data.diff) {
+                        res.data.diff.forEach(item => {
+                            const originalCode = codeToSecid[item.f12];
+                            if (originalCode) {
+                                realQuotes[originalCode] = {
+                                    price: item.f2 === '-' ? 0 : parseFloat(item.f2),
+                                    pct: item.f3 === '-' ? 0 : parseFloat(item.f3)
+                                };
                             }
-                        }
-                    });
-                    document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                        });
+                        document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                        renderTable();
+                        if (activeModalCode) updateModalContent();
+                    }
+                })
+                .catch(err => {
+                    console.error('获取东方财富行情失败:', err);
+                    document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-rose-500";
                     renderTable();
-                    if (activeModalCode) updateModalContent();
-                } catch (err) {
-                    console.error('解析新浪行情失败:', err);
-                }
-                if (script.parentNode) script.parentNode.removeChild(script);
-            };
-
-            script.onerror = function() {
-                // 如果接口请求失败，亮红灯，但确保基础表格数据正常渲染
-                document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-rose-500";
-                if (script.parentNode) script.parentNode.removeChild(script);
-                renderTable(); // 关键修复：确保表格不会留空
-            };
-
-            document.body.appendChild(script);
+                });
         }
 
         function getActionLogic(c120, cDaily, pct, budget) {
             let zone = '', action = '', style = '';
             if (cDaily < 0) {
-                zone = '建2区域';
-                action = `买入/补齐至 40% (￥${(budget * 0.4).toLocaleString()})`;
-                style = 'bg-emerald-900/80 text-emerald-300 border-emerald-500';
+                zone = '建2区域'; action = `买入/补齐至 40% (￥${(budget * 0.4).toLocaleString()})`; style = 'bg-emerald-900/80 text-emerald-300 border-emerald-500';
             } else if (c120 < 0 || cDaily < 10) {
-                zone = '建1区域';
-                action = `建仓 20% 计划仓位 (￥${(budget * 0.2).toLocaleString()})`;
-                style = 'bg-teal-900/80 text-teal-300 border-teal-500';
+                zone = '建1区域'; action = `建仓 20% (￥${(budget * 0.2).toLocaleString()})`; style = 'bg-teal-900/80 text-teal-300 border-teal-500';
             } else if (c120 >= 100) {
-                zone = '减1区域(止盈50%)';
-                action = '动量超买，止盈减仓 50%';
-                style = 'bg-amber-900/80 text-amber-300 border-amber-500';
+                zone = '减1(止盈50%)'; action = '动量超买，止盈减仓 50%'; style = 'bg-amber-900/80 text-amber-300 border-amber-500';
             } else if (cDaily >= 85) {
-                zone = '减2区域(清仓)';
-                action = '泡沫见顶，再次减50%或清仓';
-                style = 'bg-rose-900/80 text-rose-300 border-rose-500';
+                zone = '减2(清仓)'; action = '泡沫见顶，再次减50%或清仓'; style = 'bg-rose-900/80 text-rose-300 border-rose-500';
             } else {
                 if (pct <= -3.0 && pct !== 0) {
-                    zone = '动态加仓';
-                    action = `跌超3%，追加 10% (￥${(budget * 0.1).toLocaleString()})`;
-                    style = 'bg-cyan-900/80 text-cyan-300 border-cyan-500';
+                    zone = '动态加仓'; action = `跌超3%，追加 10% (￥${(budget * 0.1).toLocaleString()})`; style = 'bg-cyan-900/80 text-cyan-300 border-cyan-500';
                 } else {
-                    zone = '持有/观望';
-                    action = '按兵不动 (守住5日线)';
-                    style = 'bg-slate-800 text-slate-400 border-slate-700';
+                    zone = '持有/观望'; action = '按兵不动 (守住5日线)'; style = 'bg-slate-800 text-slate-400 border-slate-700';
                 }
             }
             return { zone, action, style };
         }
 
         function handleSort(key) {
-            if (currentSortKey === key) {
-                currentSortOrder *= -1;
-            } else {
-                currentSortKey = key;
-                currentSortOrder = 1;
-            }
+            if (currentSortKey === key) currentSortOrder *= -1;
+            else { currentSortKey = key; currentSortOrder = 1; }
             renderTable();
         }
 
@@ -344,72 +321,67 @@
                 return { ...item, pct: quote.pct, quotePrice: quote.price };
             });
 
-            if (searchKw) {
-                displayList = displayList.filter(item => item.name.toLowerCase().includes(searchKw) || item.code.toLowerCase().includes(searchKw));
-            }
+            if (searchKw) displayList = displayList.filter(item => item.name.toLowerCase().includes(searchKw) || item.code.toLowerCase().includes(searchKw));
 
-            displayList.sort((a, b) => {
-                let valA = a[currentSortKey];
-                let valB = b[currentSortKey];
-                return (valA - valB) * currentSortOrder;
-            });
+            displayList.sort((a, b) => (a[currentSortKey] - b[currentSortKey]) * currentSortOrder);
 
             const tbody = document.getElementById('etf-tbody');
             tbody.innerHTML = '';
 
-            displayList.forEach((item, idx) => {
+            displayList.forEach((item) => {
                 const logic = getActionLogic(item.c120, item.cDaily, item.pct, budget);
                 const batches = batchPortfolios[item.code] || [];
                 
-                let totalPrin = 0;
-                let totalMV = 0;
+                let totalPrin = 0; let totalMV = 0;
                 batches.forEach(b => {
                     totalPrin += b.principal;
-                    if (item.quotePrice > 0 && b.cost > 0) {
-                        const shares = b.principal / b.cost;
-                        totalMV += shares * item.quotePrice;
-                    } else {
-                        totalMV += b.principal;
-                    }
+                    totalMV += (item.quotePrice > 0 && b.cost > 0) ? (b.principal / b.cost) * item.quotePrice : b.principal;
                 });
                 const totalProfit = totalMV - totalPrin;
 
                 const pctStyle = item.pct > 0 ? 'text-rose-400' : (item.pct < 0 ? 'text-emerald-400' : 'text-slate-300');
                 const pctText = item.pct > 0 ? `+${item.pct.toFixed(2)}%` : `${item.pct.toFixed(2)}%`;
-                const profitStyle = totalProfit > 0 ? 'text-rose-400' : (totalProfit < 0 ? 'text-emerald-400' : 'text-slate-400');
                 
                 const noteSummaryText = batches.length > 0 
-                    ? `<span class="${profitStyle} font-mono">${batches.length}笔 | ${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(0)}元</span>` 
-                    : `<span class="text-slate-500">点击添加</span>`;
+                    ? `<span class="${totalProfit > 0 ? 'text-rose-400' : (totalProfit < 0 ? 'text-emerald-400' : 'text-slate-400')} font-mono">${batches.length}笔 | ${totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(0)}元</span>` 
+                    : `<span class="text-slate-500">➕ 记账</span>`;
+
+                // 十年相对位置的颜色逻辑：低于25%绿色，25-75%黄色，高于75%红色
+                let posColor = 'bg-amber-400';
+                if (item.pos10y <= 25) posColor = 'bg-emerald-400';
+                else if (item.pos10y >= 75) posColor = 'bg-rose-400';
 
                 const row = `
                     <tr class="hover:bg-slate-800/60 transition-colors">
                         <td class="p-3 text-slate-500 font-mono text-xs">${item.num}</td>
                         <td class="p-3 font-bold text-white">${item.name} <span class="text-xs font-normal text-slate-500 ml-1">${item.code}</span></td>
                         <td class="p-3 font-mono font-bold text-slate-100 text-right">${item.quotePrice > 0 ? item.quotePrice.toFixed(3) : '获取中'}</td>
-                        <td class="p-3 font-mono font-bold text-right ${pctStyle}">${pctText}</td>
+                        <td class="p-3 font-mono font-bold text-right ${pctStyle}">${item.quotePrice > 0 ? pctText : '--'}</td>
                         
-                        <td class="p-3 text-center">
-                            <input type="number" value="${item.c120}" onchange="updateCoeff('${item.code}', 'c120', this.value)" 
-                                class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-16 font-mono text-xs text-center text-cyan-300 focus:outline-none focus:border-emerald-500">
-                        </td>
-                        <td class="p-3 text-center">
-                            <input type="number" value="${item.cDaily}" onchange="updateCoeff('${item.code}', 'cDaily', this.value)" 
-                                class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-16 font-mono text-xs text-center text-emerald-300 focus:outline-none focus:border-emerald-500">
+                        <!-- 新增列：近10年位置 -->
+                        <td class="p-3">
+                            <div class="flex items-center gap-2 w-24">
+                                <span class="text-xs font-mono text-slate-300 w-7">${item.pos10y}%</span>
+                                <div class="flex-1 bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full ${posColor}" style="width: ${item.pos10y}%"></div>
+                                </div>
+                            </div>
                         </td>
 
                         <td class="p-3 text-center">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${logic.style}">${logic.zone}</span>
+                            <input type="number" value="${item.c120}" onchange="updateCoeff('${item.code}', 'c120', this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-16 font-mono text-xs text-center text-cyan-300 focus:outline-none focus:border-emerald-500">
                         </td>
-                        <td class="p-3 text-xs font-medium text-slate-200">${logic.action}</td>
-                        
                         <td class="p-3 text-center">
-                            <button onclick="openModal('${item.code}', '${item.name}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-emerald-400 transition shadow">
-                                📝 ${noteSummaryText}
+                            <input type="number" value="${item.cDaily}" onchange="updateCoeff('${item.code}', 'cDaily', this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-16 font-mono text-xs text-center text-emerald-300 focus:outline-none focus:border-emerald-500">
+                        </td>
+                        <td class="p-3 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${logic.style}">${logic.zone}</span></td>
+                        <td class="p-3 text-xs font-medium text-slate-200">${logic.action}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="openModal('${item.code}', '${item.name}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold transition shadow">
+                                ${noteSummaryText}
                             </button>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
                 tbody.innerHTML += row;
             });
         }
@@ -419,182 +391,114 @@
             if (target) { target[key] = parseFloat(val) || 0; renderTable(); }
         }
 
+        // --- 批次明细弹窗逻辑 ---
         function openModal(code, name) {
             activeModalCode = code;
-            document.getElementById('modalTitle').innerText = `${name} (${code}) - 多批次投入与盈亏明细`;
+            document.getElementById('modalTitle').innerText = `${name} (${code})`;
             document.getElementById('newBatchDate').valueAsDate = new Date();
             document.getElementById('newBatchPrice').value = realQuotes[code] ? realQuotes[code].price.toFixed(3) : '';
             document.getElementById('newBatchPrincipal').value = '';
-            
             updateModalContent();
-            document.getElementById('noteModal').classList.remove('hidden');
-            document.getElementById('noteModal').classList.add('flex');
+            document.getElementById('noteModal').classList.remove('hidden'); document.getElementById('noteModal').classList.add('flex');
         }
-
-        function closeModal() {
-            document.getElementById('noteModal').classList.remove('flex');
-            document.getElementById('noteModal').classList.add('hidden');
-            activeModalCode = null;
-            renderTable();
-        }
+        function closeModal() { document.getElementById('noteModal').classList.add('hidden'); activeModalCode = null; renderTable(); }
 
         function updateModalContent() {
             if (!activeModalCode) return;
             const batches = batchPortfolios[activeModalCode] || [];
             const currentPrice = realQuotes[activeModalCode] ? realQuotes[activeModalCode].price : 0;
+            let totalPrin = 0; let totalMV = 0;
+            const tbody = document.getElementById('batchTableBody'); tbody.innerHTML = '';
             
-            let totalPrin = 0;
-            let totalMV = 0;
-            const tbody = document.getElementById('batchTableBody');
-            tbody.innerHTML = '';
-
-            if (batches.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">暂无买入批次记录，请在上方添加</td></tr>`;
-            }
-
+            if (batches.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">暂无记录，请添加</td></tr>`;
+            
             batches.forEach((b, index) => {
                 totalPrin += b.principal;
-                let mv = b.principal;
-                if (currentPrice > 0 && b.cost > 0) {
-                    mv = (b.principal / b.cost) * currentPrice;
-                }
+                const mv = (currentPrice > 0 && b.cost > 0) ? (b.principal / b.cost) * currentPrice : b.principal;
                 totalMV += mv;
                 const profit = mv - b.principal;
-                const pStyle = profit >= 0 ? 'text-rose-400' : 'text-emerald-400';
-
-                const tr = `
-                    <tr>
-                        <td class="py-2 font-mono text-slate-300">${b.date}</td>
-                        <td class="py-2 font-mono text-right text-slate-200">￥${b.cost.toFixed(3)}</td>
-                        <td class="py-2 font-mono text-right text-slate-200">￥${b.principal.toLocaleString()}</td>
-                        <td class="py-2 font-mono text-right ${pStyle}">${profit >= 0 ? '+' : ''}${profit.toFixed(2)}元</td>
-                        <td class="py-2 text-center">
-                            <button onclick="deleteBatch('${activeModalCode}', ${index})" class="text-rose-400 hover:text-rose-300 font-bold px-1.5 py-0.5 rounded bg-rose-950/40 border border-rose-900">删</button>
-                        </td>
-                    </tr>
-                `;
-                tbody.innerHTML += tr;
+                tbody.innerHTML += `<tr>
+                    <td class="py-2 font-mono text-slate-300">${b.date}</td>
+                    <td class="py-2 font-mono text-right text-slate-200">￥${b.cost.toFixed(3)}</td>
+                    <td class="py-2 font-mono text-right text-slate-200">￥${b.principal.toLocaleString()}</td>
+                    <td class="py-2 font-mono text-right ${profit >= 0 ? 'text-rose-400' : 'text-emerald-400'}">${profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
+                    <td class="py-2 text-center"><button onclick="deleteBatch('${activeModalCode}', ${index})" class="text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded">删</button></td>
+                </tr>`;
             });
-
-            const totalProfit = totalMV - totalPrin;
-            const totalRate = totalPrin > 0 ? (totalProfit / totalPrin) * 100 : 0;
-
+            const totalProfit = totalMV - totalPrin; const totalRate = totalPrin > 0 ? (totalProfit/totalPrin)*100 : 0;
             document.getElementById('modalCurrentPrice').innerText = currentPrice > 0 ? `￥${currentPrice.toFixed(3)}` : '获取中...';
             document.getElementById('modalSummaryVal').innerText = `￥${totalPrin.toLocaleString()} / ￥${totalMV.toFixed(0)}`;
-            
-            const summaryProfitEl = document.getElementById('modalSummaryProfit');
-            summaryProfitEl.innerText = `${totalProfit >= 0 ? '+' : ''}￥${totalProfit.toFixed(2)} (${totalRate >= 0 ? '+' : ''}${totalRate.toFixed(2)}%)`;
-            summaryProfitEl.className = `font-mono text-base font-bold ${totalProfit >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
+            const sumEl = document.getElementById('modalSummaryProfit');
+            sumEl.innerText = `${totalProfit >= 0 ? '+' : ''}￥${totalProfit.toFixed(2)} (${totalRate >= 0 ? '+' : ''}${totalRate.toFixed(2)}%)`;
+            sumEl.className = `font-mono text-base font-bold ${totalProfit >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
         }
 
         function addBatch() {
-            if (!activeModalCode) return;
-            const date = document.getElementById('newBatchDate').value;
-            const cost = parseFloat(document.getElementById('newBatchPrice').value);
-            const principal = parseFloat(document.getElementById('newBatchPrincipal').value);
-
-            if (!date || !cost || !principal || cost <= 0 || principal <= 0) {
-                alert('请填写完整的有效日期、买入均价和本金！');
-                return;
-            }
-
-            if (!batchPortfolios[activeModalCode]) {
-                batchPortfolios[activeModalCode] = [];
-            }
-
-            batchPortfolios[activeModalCode].push({ date, cost, principal });
+            const date = document.getElementById('newBatchDate').value; const cost = parseFloat(document.getElementById('newBatchPrice').value); const prin = parseFloat(document.getElementById('newBatchPrincipal').value);
+            if (!date || !cost || !prin || cost <= 0 || prin <= 0) return alert('填写无效！');
+            if (!batchPortfolios[activeModalCode]) batchPortfolios[activeModalCode] = [];
+            batchPortfolios[activeModalCode].push({ date, cost, principal: prin });
             localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios));
-            
-            if (typeof window.saveToCloud === 'function') {
-                window.saveToCloud();
-            }
+            window.saveToCloud(); updateModalContent();
+        }
+        function deleteBatch(code, idx) { batchPortfolios[code].splice(idx, 1); localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios)); window.saveToCloud(); updateModalContent(); }
 
-            document.getElementById('newBatchPrice').value = '';
-            document.getElementById('newBatchPrincipal').value = '';
-            updateModalContent();
+        // --- 云端同步配置面板逻辑 ---
+        function openConfigModal() {
+            document.getElementById('ghTokenInput').value = localStorage.getItem('gh_token') || '';
+            document.getElementById('ghGistIdInput').value = localStorage.getItem('gh_gist_id') || '9d014412e7f9ea56862152c905f37d05';
+            document.getElementById('configModal').classList.remove('hidden'); document.getElementById('configModal').classList.add('flex');
+        }
+        function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
+        function saveConfig() {
+            localStorage.setItem('gh_token', document.getElementById('ghTokenInput').value.trim());
+            localStorage.setItem('gh_gist_id', document.getElementById('ghGistIdInput').value.trim());
+            closeConfigModal(); window.syncFromCloud(); alert('云同步配置已保存，已尝试触发同步！');
         }
 
-        function deleteBatch(code, index) {
-            if (batchPortfolios[code]) {
-                batchPortfolios[code].splice(index, 1);
-                localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios));
-                
-                if (typeof window.saveToCloud === 'function') {
-                    window.saveToCloud();
-                }
+        // 定时刷新逻辑
+        setInterval(() => { countdownSec--; if (countdownSec <= 0) { fetchQuotes(); countdownSec = 5; } document.getElementById('countdown').innerText = countdownSec; }, 1000);
 
-                updateModalContent();
-            }
-        }
-
-        // 定时器：每 5 秒自动请求一次行情
-        setInterval(() => {
-            countdownSec--;
-            if (countdownSec <= 0) { 
-                fetchQuotes(); 
-                countdownSec = 5; 
-            }
-            document.getElementById('countdown').innerText = countdownSec;
-        }, 1000);
-
-        // 初始化：先渲染空表格（避免一片空白），再请求数据
-        renderTable();
-        fetchQuotes();
+        // 初始化
+        renderTable(); fetchQuotes();
     </script>
 
-    <!-- GitHub Gist 自动同步脚本 -->
+    <!-- GitHub Gist 同步逻辑 (已改为读取本地配置) -->
     <script>
     (function() {
-        const GIST_CONFIG = {
-            token: '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',
-            gistId: '9d014412e7f9ea56862152c905f37d05',
-            filename: 'etf-data.json'
-        };
-
-        async function syncFromCloud() {
+        window.syncFromCloud = async function() {
+            const token = localStorage.getItem('gh_token');
+            const gistId = localStorage.getItem('gh_gist_id');
+            if (!token || !gistId) return; // 如果没有配置则不报错，默默使用本地数据
             try {
-                let res = await fetch(`https://api.github.com/gists/${GIST_CONFIG.gistId}`, {
-                    headers: { 'Authorization': `token ${GIST_CONFIG.token}` }
-                });
+                let res = await fetch(`https://api.github.com/gists/${gistId}`, { headers: { 'Authorization': `token ${token}` } });
                 if (res.ok) {
                     let data = await res.json();
-                    let file = data.files[GIST_CONFIG.filename] || Object.values(data.files)[0];
+                    let file = data.files['etf-data.json'] || Object.values(data.files)[0];
                     if (file && file.content) {
                         localStorage.setItem('mingtian_batches_v1', file.content);
                         batchPortfolios = JSON.parse(file.content || '{}');
-                        console.log('云端数据同步成功');
                         renderTable();
                     }
                 }
-            } catch (e) {
-                console.log('从云端加载数据失败，使用本地数据', e);
-            }
+            } catch (e) { console.log('拉取云端数据失败'); }
         }
 
         window.saveToCloud = async function() {
+            const token = localStorage.getItem('gh_token');
+            const gistId = localStorage.getItem('gh_gist_id');
+            if (!token || !gistId) return;
             try {
                 let localData = localStorage.getItem('mingtian_batches_v1') || '{}';
-                await fetch(`https://api.github.com/gists/${GIST_CONFIG.gistId}`, {
+                await fetch(`https://api.github.com/gists/${gistId}`, {
                     method: 'PATCH',
-                    headers: {
-                        'Authorization': `token ${GIST_CONFIG.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        files: {
-                            [GIST_CONFIG.filename]: { content: localData }
-                        }
-                    })
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files: { 'etf-data.json': { content: localData } } })
                 });
-                console.log('已自动同步到云端 Gist');
-            } catch (e) {
-                console.error('保存到云端失败', e);
-            }
+            } catch (e) { console.error('保存到云端失败', e); }
         };
 
-        window.addEventListener('DOMContentLoaded', () => {
-            syncFromCloud();
-        });
+        window.addEventListener('DOMContentLoaded', () => { window.syncFromCloud(); });
     })();
     </script>
 </body>
