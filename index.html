@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 核心修复：屏蔽 Referer 绕过新浪/腾讯等财经接口的防盗链限制 -->
+    <meta name="referrer" content="no-referrer">
     <title>鸣天ETF交易系统 - 动态批次建仓与止盈清仓版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -23,11 +25,11 @@
         <div class="bg-card p-5 rounded-2xl border border-custom shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <div class="flex items-center gap-2">
-                    <span id="status-dot" class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="status-dot" class="inline-block w-3 h-3 rounded-full bg-slate-500 animate-pulse"></span>
                     <h1 class="text-xl md:text-2xl font-bold text-emerald-400">鸣天ETF交易系统 (交易纪律与多批次日记账版)</h1>
                 </div>
                 <p class="text-xs md:text-sm text-slate-400 mt-1">
-                    实时行情 (新浪财经接口) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
+                    实时行情 (新浪财经稳定版) | 严格网格建仓、加仓、分批止盈与清仓纪律说明
                 </p>
             </div>
             
@@ -245,7 +247,7 @@
 
             const script = document.createElement('script');
             script.src = `https://hq.sinajs.cn/list=${queryStr}&_=${Date.now()}`;
-            script.charset = 'gbk'; // 新浪接口使用 GBK 编码
+            script.charset = 'gbk';
             
             script.onload = function() {
                 try {
@@ -278,8 +280,10 @@
             };
 
             script.onerror = function() {
+                // 如果接口请求失败，亮红灯，但确保基础表格数据正常渲染
                 document.getElementById('status-dot').className = "inline-block w-3 h-3 rounded-full bg-rose-500";
                 if (script.parentNode) script.parentNode.removeChild(script);
+                renderTable(); // 关键修复：确保表格不会留空
             };
 
             document.body.appendChild(script);
@@ -304,7 +308,7 @@
                 action = '泡沫见顶，再次减50%或清仓';
                 style = 'bg-rose-900/80 text-rose-300 border-rose-500';
             } else {
-                if (pct <= -3.0) {
+                if (pct <= -3.0 && pct !== 0) {
                     zone = '动态加仓';
                     action = `跌超3%，追加 10% (￥${(budget * 0.1).toLocaleString()})`;
                     style = 'bg-cyan-900/80 text-cyan-300 border-cyan-500';
@@ -533,7 +537,8 @@
             document.getElementById('countdown').innerText = countdownSec;
         }, 1000);
 
-        // 页面打开首次加载行情
+        // 初始化：先渲染空表格（避免一片空白），再请求数据
+        renderTable();
         fetchQuotes();
     </script>
 
