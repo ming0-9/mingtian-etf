@@ -3,598 +3,273 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 核心：屏蔽 Referer 绕过防盗链 -->
-    <meta name="referrer" content="no-referrer">
-    <title>鸣天ETF交易系统 - 专业版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>鸣天交易系统 - ETF波段高低位监控看板</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif; }
-        .bg-card { background-color: #1e293b; }
-        .border-custom { border-color: #334155; }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        th.sortable { cursor: pointer; transition: color 0.2s; user-select: none; }
-        th.sortable:hover { color: #34d399; }
-        .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: #1e293b; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .animate-blink { animation: blink 1s infinite; }
+        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #1a237e; margin-bottom: 10px; font-size: 32px; }
+        .header p { color: #5c6bc0; font-size: 16px; margin: 0; }
+        
+        .panel { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .panel-title { font-size: 20px; font-weight: bold; border-bottom: 2px solid #e8eaf6; padding-bottom: 10px; margin-bottom: 20px; color: #283593; display: flex; justify-content: space-between; align-items: center;}
+        .date-badge { font-size: 14px; background: #e8eaf6; color: #3f51b5; padding: 4px 12px; border-radius: 20px; font-weight: normal; }
+        
+        .logic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .logic-card { padding: 20px; border-radius: 8px; line-height: 1.6; }
+        .logic-buy { background-color: #e8f5e9; border-left: 5px solid #43a047; }
+        .logic-sell { background-color: #ffebee; border-left: 5px solid #e53935; }
+        .logic-card h3 { margin-top: 0; color: #333; }
+        .highlight { font-weight: bold; color: #d32f2f; }
+        
+        .table-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn { padding: 8px 16px; background-color: #3949ab; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.3s; }
+        .btn:hover { background-color: #283593; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; }
+        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+        th { background-color: #f8f9fa; font-weight: 600; color: #455a64; cursor: pointer; position: relative; white-space: nowrap; }
+        th:hover { background-color: #eceff1; }
+        tr:hover { background-color: #f9fbe7; transition: background-color 0.2s; }
+        
+        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; }
+        .status-buy1 { background-color: #c8e6c9; color: #1b5e20; }
+        .status-buy2 { background-color: #a5d6a7; color: #1b5e20; box-shadow: 0 0 5px rgba(76,175,80,0.5); }
+        .status-sell1 { background-color: #ffcdd2; color: #b71c1c; }
+        .status-sell2 { background-color: #ef9a9a; color: #b71c1c; box-shadow: 0 0 5px rgba(244,67,54,0.5); }
+        .status-hold { background-color: #fff3e0; color: #e65100; }
+        
+        .pos-container { width: 80px; height: 14px; background-color: #e0e0e0; border-radius: 7px; margin: 0 auto; overflow: hidden; position: relative; }
+        .pos-bar { height: 100%; background: linear-gradient(90deg, #4caf50, #ffc107, #f44336); transition: width 0.5s ease; }
+        .pos-text { position: absolute; width: 100%; text-align: center; top: 0; left: 0; font-size: 10px; line-height: 14px; color: #333; font-weight: bold; text-shadow: 0px 0px 2px white; }
+        
+        .val-red { color: #d32f2f; font-weight: bold; }
+        .val-green { color: #388e3c; font-weight: bold; }
+        
+        .logic-desc { font-size: 12px; color: #78909c; text-align: left; line-height:1.4; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-6">
+<body>
 
-<!-- =================================================================
-     👇 核心配置区：只需修改这里的 PROXY_API 地址即可连接实时行情
-     ================================================================= -->
-<script>
-    // 👇👇👇 请将你的 Vercel 代理域名填入下方 (保留 /api/proxy) 👇👇👇
-    // 例如: 'https://sina-finance-proxy-abc123.vercel.app/api/proxy'
-    // 如果留空或不填，系统将自动使用“模拟数据模式” (价格不变，适合练手/离线)
-    const PROXY_API = 'https://mingtian-36qpgsswj-heshang.vercel.app/api/proxy'; 
-    
-    // 交易参数配置 (可根据习惯微调)
-    const CONFIG = {
-        GRID_DROP_PCT: 3.0,      // 网格加仓触发回撤: 3%
-        BUILD_1_PCT: 0.20,       // 建1 仓位: 20%
-        BUILD_2_PCT: 0.40,       // 建2 仓位: 40% (含建1)
-        ADD_PCT: 0.10,           // 每格加仓: 10%
-        MAX_POS_PCT: 0.90,       // 最大仓位上限: 90% (防满仓)
-        REDUCE_1_TRIGGER: 85,    // 减1触发RSI: 85
-        REDUCE_2_TRIGGER: 90,    // 减2触发估值百分位: 90
-        BUILD_2_TRIGGER: 10,     // 建2触发估值百分位: 10
-        BUILD_1_TRIGGER: 25,     // 建1触发估值百分位: 25
-    };
-</script>
-<!-- ================================================================= -->
+<div class="container">
+    <div class="header">
+        <h1>鸣天交易系统</h1>
+        <p>基于结构安全系数与长周期相对位置的左侧网格交易看板</p>
+    </div>
 
-<div class="max-w-[1600px] mx-auto space-y-5">
-
-    <!-- 顶部标题栏 -->
-    <div class="bg-slate-900/80 backdrop-blur-sm p-5 rounded-2xl border border-slate-700 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <div class="flex items-center gap-2">
-                <span id="status-dot" class="inline-block w-3 h-3 rounded-full bg-slate-500"></span>
-                <h1 class="text-xl md:text-2xl font-bold text-emerald-400 tracking-tight">鸣天ETF交易系统</h1>
-                <span class="text-xs px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-400">纪律版 v2.1</span>
+    <div class="panel">
+        <div class="panel-title">📉 交易纪律与底层逻辑</div>
+        <div class="logic-grid">
+            <div class="logic-card logic-buy">
+                <h3>建仓标准 (左侧分批买入)</h3>
+                <p><strong>第二步 (建2) 优先判断:</strong> 日线系数 < 0 时触发。匹配仓位 <span class="highlight">40%</span> (直接重仓/加仓)。</p>
+                <p><strong>第一步 (建1):</strong> 120分钟系数 < 0 或 日线系数 < 10 时触发。底仓配置 <span class="highlight">20%</span>。</p>
+                <p><strong>第三步 (加仓):</strong> 日线系数 < 0 之后，价格每跌 <span class="highlight">3%</span>，加仓 <span class="highlight">10%</span> 直至加满躺平。</p>
             </div>
-            <p class="text-xs md:text-sm text-slate-400 mt-1">实时行情 | 网格建仓 | 分批止盈 | 多批次日记账 | 云端同步</p>
+            <div class="logic-card logic-sell">
+                <h3>减仓标准 (多头排列减持)</h3>
+                <p><strong>第二步 (减2) 优先判断:</strong> 日线结构系数 >= 85 时触发。减去剩余仓位的 <span class="highlight">一半</span>。</p>
+                <p><strong>第一步 (减1):</strong> 120分钟系数 >= 100 时触发。减去当前持有仓位的 <span class="highlight">一半</span>。</p>
+                <p><strong>第三步 (利润腾飞):</strong> 保留利润底仓，守住均线保利 (跌破5均减到位)。</p>
+            </div>
         </div>
-        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-            <div class="text-xs text-slate-300 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2">
-                <span>下次刷新:</span>
-                <span id="countdown" class="text-emerald-400 font-mono font-bold w-6 text-right">5</span>
-                <span>s</span>
-                <span id="net-status" class="ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-700">离线</span>
-            </div>
-            <button onclick="fetchQuotes()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition shadow-white/10 flex items-center gap-1">
-                <svg class="w-4 h-4 animate-spin" id="refresh-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                <span>强制刷新</span>
-            </button>
+        <div style="margin-top: 15px; background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 5px solid #1976d2; font-size: 14px;">
+            <strong>💡 长周期 (5年/10年) 结合：</strong> 系数反映短期高低位，长周期位置决定仓位大小。若日线建2且长周期处于极低位(<20%)，则为历史大底，重仓进场。
         </div>
     </div>
 
-    <!-- 纪律面板 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-slate-900/80 backdrop-blur-sm p-4 rounded-xl border border-slate-700 text-xs space-y-2 leading-relaxed">
-            <div class="font-bold text-emerald-400 text-sm flex items-center gap-1">📈 进场、加仓与网格执行规则 (左侧交易)</div>
-            <ul class="list-disc list-inside text-slate-300 space-y-1">
-                <li><b>建1区域</b>（日线估值百分位 &le; <span class="text-cyan-400">25%</span>）：左侧试探，买入计划总资金的 <b>20%</b>。</li>
-                <li><b>建2区域</b>（日线估值百分位 &le; <span class="text-cyan-400">10%</span>）：深度低估，补齐至计划总资金的 <b>40%</b>。</li>
-                <li><b>动态加仓</b>：持仓后，价格每跌破 <b>持仓均价 3%</b>，触发网格加仓，追加计划资金的 <b>10%</b> (最高至90%仓位)。</li>
-            </ul>
-        </div>
-        <div class="bg-slate-900/80 backdrop-blur-sm p-4 rounded-xl border border-slate-700 text-xs space-y-2 leading-relaxed">
-            <div class="font-bold text-rose-400 text-sm flex items-center gap-1">🛡️ 止盈、减仓与清仓执行规则 (右侧交易)</div>
-            <ul class="list-disc list-inside text-slate-300 space-y-1">
-                <li><b>减1区域（止盈50%）</b>：<b>120分钟RSI &ge; 85</b>，短期严重超买，减持当前总持仓的 <b>50%</b>。</li>
-                <li><b>减2区域（清仓/留底）</b>：<b>日线估值百分位 &ge; 90%</b>，中期泡沫见顶，再次减去剩余持仓的 <b>50%</b> (或全部清仓)。</li>
-                <li><b>纪律红线</b>：清仓后资金强制离场，绝不在此位置留恋，等待下一个周期轮动。</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- 资金预算与搜索 -->
-    <div class="bg-slate-900/80 backdrop-blur-sm p-4 rounded-xl border border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-        <div>
-            <label class="text-xs text-slate-400 font-semibold block">单板块计划资金预算 (元):</label>
-            <div class="flex items-center gap-1 mt-1">
-                <span class="text-emerald-400 font-bold">￥</span>
-                <input type="number" id="budgetInput" value="100000" oninput="renderTable()" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm font-mono focus:outline-none focus:border-emerald-500 w-32">
-            </div>
-        </div>
-        <div class="col-span-2 grid grid-cols-3 gap-2 text-center text-xs bg-slate-800/80 p-2.5 rounded-lg border border-slate-700">
-            <div>
-                <div class="text-slate-400">建1区域 (20%)</div>
-                <div id="val-b1" class="text-emerald-400 font-bold font-mono text-sm mt-0.5">20,000</div>
+    <div class="panel">
+        <div class="table-controls">
+            <div class="panel-title" style="border:none; margin:0; padding:0;">
+                📊 行业ETF板块状态监控
+                <span class="date-badge">数据更新至: 7月24日 (完整行业)</span>
             </div>
             <div>
-                <div class="text-slate-400">建2区域 (40%)</div>
-                <div id="val-b2" class="text-teal-400 font-bold font-mono text-sm mt-0.5">40,000</div>
-            </div>
-            <div>
-                <div class="text-slate-400">跌3%加仓 (10%)</div>
-                <div id="val-add" class="text-cyan-400 font-bold font-mono text-sm mt-0.5">10,000</div>
+                <span style="font-size: 14px; color: #666; margin-right: 10px;">点击表头可进行排序</span>
             </div>
         </div>
-        <div>
-            <input type="text" id="searchInput" placeholder="🔍 快速搜索行业或代码..." oninput="renderTable()" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-xs w-full focus:outline-none focus:border-emerald-500">
-        </div>
+        
+        <table id="etfTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">行业板块 ↕</th>
+                    <th onclick="sortTable(1)">系数变动 ↕</th>
+                    <th onclick="sortTable(2)">120分系数 ↕</th>
+                    <th onclick="sortTable(3)">日线系数 ↕</th>
+                    <th onclick="sortTable(4)">5年位置(拟) ↕</th>
+                    <th onclick="sortTable(5)">10年位置(拟) ↕</th>
+                    <th onclick="sortTable(6)">系统状态 ↕</th>
+                    <th>操作逻辑说明</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Data will be injected here via JS -->
+            </tbody>
+        </table>
     </div>
-
-    <!-- 核心数据表格 -->
-    <div class="bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
-        <div class="overflow-x-auto scrollbar-thin">
-            <table class="w-full text-left text-sm whitespace-nowrap">
-                <thead class="bg-slate-950/90 text-slate-400 uppercase text-xs border-b border-slate-700 sticky top-0 select-none">
-                    <tr>
-                        <th class="p-3 sortable" onclick="handleSort('num')"># ↕</th>
-                        <th class="p-3">板块名称</th>
-                        <th class="p-3 text-right">最新价</th>
-                        <th class="p-3 text-right sortable text-rose-300" onclick="handleSort('pct')">涨跌幅 ↕</th>
-                        <th class="p-3 text-center sortable text-cyan-300" onclick="handleSort('c120')">短线RSI(可改) ↕</th>
-                        <th class="p-3 text-center sortable text-emerald-300" onclick="handleSort('cDaily')">长线估值% ↕</th>
-                        <th class="p-3 text-center">信号区域</th>
-                        <th class="p-3">交易逻辑指令</th>
-                        <th class="p-3 text-center">仓位/盈亏</th>
-                        <th class="p-3 text-center">多批次日记账</th>
-                    </tr>
-                </thead>
-                <tbody id="etf-tbody" class="divide-y divide-slate-800 text-slate-200">
-                </tbody>
-            </table>
-        </div>
-    </div>
-
 </div>
 
-<!-- 弹窗：多批次投入日记账与盈亏明细 -->
-<div id="noteModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl text-slate-100">
-        <div class="flex justify-between items-center border-b border-slate-700 p-4 flex-shrink-0">
-            <h3 id="modalTitle" class="text-lg font-bold text-emerald-400">批次投入明细与盈亏</h3>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-white font-bold text-xl p-1">✕</button>
-        </div>
-        
-        <div class="p-4 overflow-y-auto space-y-4 flex-1">
-            <!-- 头部汇总 -->
-            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div>
-                    <span class="text-slate-400 block">当前最新股价</span>
-                    <span id="modalCurrentPrice" class="font-mono text-base font-bold text-white">--</span>
-                </div>
-                <div>
-                    <span class="text-slate-400 block">总投入本金 / 当前市值</span>
-                    <span id="modalSummaryVal" class="font-mono text-base font-bold text-cyan-400">￥0 / ￥0</span>
-                </div>
-                <div class="text-right md:text-left">
-                    <span class="text-slate-400 block">综合浮动盈亏</span>
-                    <span id="modalSummaryProfit" class="font-mono text-base font-bold text-emerald-400">￥0 (0.00%)</span>
-                </div>
-            </div>
-
-            <!-- 添加新批次表单 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 bg-slate-900 p-3 rounded-lg border border-slate-700 items-end">
-                <div class="md:col-span-1">
-                    <label class="text-slate-400 block mb-1">投入日期</label>
-                    <input type="date" id="newBatchDate" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full focus:outline-none focus:border-emerald-500">
-                </div>
-                <div class="md:col-span-1">
-                    <label class="text-slate-400 block mb-1">买入均价(元)</label>
-                    <input type="number" step="0.001" id="newBatchPrice" placeholder="例: 1.250" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full focus:outline-none focus:border-emerald-500 font-mono">
-                </div>
-                <div class="md:col-span-1">
-                    <label class="text-slate-400 block mb-1">投入本金(元)</label>
-                    <input type="number" id="newBatchPrincipal" placeholder="例: 2000" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs w-full focus:outline-none focus:border-emerald-500 font-mono">
-                </div>
-                <div class="md:col-span-1 flex items-end">
-                    <button onclick="addBatch()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded font-bold transition w-full">➕ 添加批次</button>
-                </div>
-            </div>
-
-            <!-- 批次列表 -->
-            <div class="max-h-64 overflow-y-auto scrollbar-thin space-y-1 pr-1">
-                <table class="w-full text-left text-xs">
-                    <thead class="text-slate-400 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
-                        <tr>
-                            <th class="py-2 px-2">日期</th>
-                            <th class="py-2 px-2 text-right">买入均价</th>
-                            <th class="py-2 px-2 text-right">投入本金</th>
-                            <th class="py-2 px-2 text-right">持仓份额</th>
-                            <th class="py-2 px-2 text-right">当前市值</th>
-                            <th class="py-2 px-2 text-right">浮动盈亏</th>
-                            <th class="py-2 px-2 text-center">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="batchTableBody" class="divide-y divide-slate-700/50">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="flex justify-end p-4 border-t border-slate-700 flex-shrink-0">
-            <button onclick="closeModal()" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold">关闭窗口</button>
-        </div>
-    </div>
-
-<!-- 主逻辑脚本 -->
 <script>
-    // ============ 1. 静态数据定义 (系数已调整为合理百分位/RSI范围) ============
-    const etfData = [
-        { num: 1, name: "医药ETF易方达", code: "SH512010", c120: 45, cDaily: 35 },
-        { num: 2, name: "证券ETF国泰", code: "SH512880", c120: 85, cDaily: 88 },
-        { num: 3, name: "恒生科技指数ETF", code: "SH513180", c120: 25, cDaily: 15 },
-        { num: 4, name: "黄金ETF华安", code: "SH518880", c120: 70, cDaily: 92 },
-        { num: 5, name: "酒ETF", code: "SH512690", c120: 30, cDaily: 20 },
-        { num: 6, name: "卫星ETF永赢", code: "SZ159206", c120: 55, cDaily: 50 },
-        { num: 7, name: "光伏ETF华泰柏瑞", code: "SH515790", c120: 18, cDaily: 8 },
-        { num: 8, name: "养殖ETF国泰", code: "SZ159865", c120: 40, cDaily: 42 },
-        { num: 9, name: "农业ETF富国", code: "SZ159825", c120: 38, cDaily: 35 },
-        { num: 10, name: "航空航天ETF", code: "SZ159227", c120: 50, cDaily: 55 },
-        { num: 11, name: "人工智能ETF", code: "SH515980", c120: 75, cDaily: 80 },
-        { num: 12, name: "创新药ETF", code: "SZ159992", c120: 42, cDaily: 38 },
-        { num: 13, name: "软件ETF嘉实", code: "SZ159852", c120: 82, cDaily: 85 },
-        { num: 14, name: "恒生医疗ETF博时", code: "SH513060", c120: 35, cDaily: 28 },
-        { num: 15, name: "军工ETF国泰", code: "SH512660", c120: 48, cDaily: 52 },
-        { num: 16, name: "煤炭ETF国泰", code: "SH515220", c120: 22, cDaily: 12 },
-        { num: 17, name: "传媒ETF广发", code: "SH512980", c120: 60, cDaily: 65 },
-        { num: 18, name: "通信ETF国泰", code: "SH515880", c120: 15, cDaily: 10 },
-        { num: 19, name: "芯片ETF", code: "SZ159995", c120: 58, cDaily: 70 },
-        { num: 20, name: "创业板50ETF华安", code: "SZ159949", c120: 28, cDaily: 22 },
-        { num: 21, name: "黄金股ETF永赢", code: "SH517520", c120: 68, cDaily: 88 },
-        { num: 22, name: "化工ETF", code: "SZ159870", c120: 30, cDaily: 25 },
-        { num: 23, name: "半导体ETF", code: "SH512480", c120: 52, cDaily: 68 },
-        { num: 24, name: "机器人ETF", code: "SH562500", c120: 72, cDaily: 78 },
-        { num: 25, name: "半导体设备ETF国泰", code: "SZ159516", c120: 45, cDaily: 48 },
-        { num: 26, name: "有色金属ETF", code: "SH512400", c120: 55, cDaily: 62 },
-        { num: 27, name: "电网设备ETF", code: "SZ159326", c120: 20, cDaily: 18 },
-        { num: 28, name: "港股创新药ETF广发", code: "SH513120", c120: 40, cDaily: 35 },
-        { num: 29, name: "中概互联网ETF易方达", code: "SH513050", c120: 65, cDaily: 72 },
-        { num: 30, name: "沪深300ETF华泰柏瑞", code: "SH510300", c120: 50, cDaily: 55 },
-        { num: 31, name: "中证1000ETF", code: "SZ159845", c120: 35, cDaily: 38 },
-        { num: 32, name: "创业板ETF易方达", code: "SZ159915", c120: 26, cDaily: 20 },
-        { num: 33, name: "中证1000ETF", code: "SH512100", c120: 36, cDaily: 39 },
-        { num: 34, name: "上证50ETF", code: "SH510050", c120: 48, cDaily: 42 },
-        { num: 35, name: "科创50ETF", code: "SH588000", c120: 58, cDaily: 65 },
-        { num: 36, name: "纳指ETF广发", code: "SZ159941", c120: 88, cDaily: 95 },
-        { num: 37, name: "中证500ETF", code: "SH510500", c120: 40, cDaily: 38 },
-        { num: 38, name: "恒生ETF", code: "SZ159920", c120: 42, cDaily: 30 },
-        { num: 39, name: "游戏ETF", code: "SZ159869", c120: 78, cDaily: 82 }
+    // 数据已完全替换为7月24日截图中的完整数据
+    const rawData = [
+        { name: "光伏", code: "--", change: 0.38, coeff120: 7.03, coeffDaily: -3.28, pos5y: 0, pos10y: 4 },
+        { name: "电池", code: "--", change: -0.44, coeff120: 4.77, coeffDaily: -1.62, pos5y: 2, pos10y: 0 },
+        { name: "电网设备", code: "--", change: -1.09, coeff120: -1.92, coeffDaily: -0.85, pos5y: 10, pos10y: 0 },
+        { name: "船舶", code: "--", change: 0.33, coeff120: 13.72, coeffDaily: 3.38, pos5y: 2, pos10y: 0 },
+        { name: "航空航天", code: "--", change: 0.16, coeff120: 12.05, coeffDaily: 4.13, pos5y: 12, pos10y: 11 },
+        { name: "绿色电力", code: "--", change: 0.51, coeff120: 22.10, coeffDaily: 4.84, pos5y: 0, pos10y: 22 },
+        { name: "军工", code: "--", change: -0.27, coeff120: 12.07, coeffDaily: 5.41, pos5y: 17, pos10y: 15 },
+        { name: "黄金", code: "--", change: -0.21, coeff120: 19.11, coeffDaily: 6.50, pos5y: 18, pos10y: 4 },
+        { name: "传媒", code: "--", change: -1.10, coeff120: 11.95, coeffDaily: 6.81, pos5y: 0, pos10y: 0 },
+        { name: "卫星", code: "--", change: -1.15, coeff120: 10.22, coeffDaily: 7.60, pos5y: 0, pos10y: 1 },
+        { name: "化工", code: "--", change: -0.34, coeff120: 14.71, coeffDaily: 8.63, pos5y: 0, pos10y: 3 },
+        { name: "软件", code: "--", change: -1.72, coeff120: 14.90, coeffDaily: 10.10, pos5y: 14, pos10y: 26 },
+        { name: "稀土", code: "--", change: -1.64, coeff120: -0.27, coeffDaily: 10.58, pos5y: 0, pos10y: 6 },
+        { name: "旅游", code: "--", change: -0.57, coeff120: 24.01, coeffDaily: 10.68, pos5y: 16, pos10y: 2 },
+        { name: "金融科技", code: "--", change: -1.74, coeff120: 13.27, coeffDaily: 10.85, pos5y: 22, pos10y: 0 },
+        { name: "有色金属", code: "--", change: 0.76, coeff120: 19.29, coeffDaily: 11.00, pos5y: 6, pos10y: 5 },
+        { name: "游戏", code: "--", change: -2.02, coeff120: 24.35, coeffDaily: 14.81, pos5y: 13, pos10y: 0 },
+        { name: "煤炭", code: "--", change: 0.92, coeff120: 34.93, coeffDaily: 18.05, pos5y: 17, pos10y: 17 },
+        { name: "中证1000", code: "--", change: -3.95, coeff120: 1.87, coeffDaily: 20.96, pos5y: 24, pos10y: 0 },
+        { name: "黄金股", code: "--", change: 1.34, coeff120: 66.19, coeffDaily: 22.81, pos5y: 23, pos10y: 19 },
+        { name: "自由现金流", code: "--", change: 2.01, coeff120: 64.85, coeffDaily: 24.81, pos5y: 19, pos10y: 8 },
+        { name: "农业", code: "--", change: 0.67, coeff120: 82.62, coeffDaily: 27.51, pos5y: 21, pos10y: 0 },
+        { name: "机器人", code: "--", change: -5.39, coeff120: -2.80, coeffDaily: 27.67, pos5y: 11, pos10y: 34 },
+        { name: "中证500", code: "--", change: -4.34, coeff120: 9.77, coeffDaily: 31.16, pos5y: 15, pos10y: 7 },
+        { name: "酒", code: "--", change: 1.19, coeff120: 63.53, coeffDaily: 32.88, pos5y: 38, pos10y: 32 },
+        { name: "养殖", code: "--", change: -0.33, coeff120: 81.82, coeffDaily: 34.93, pos5y: 23, pos10y: 10 },
+        { name: "通信", code: "--", change: -4.08, coeff120: -1.96, coeffDaily: 35.25, pos5y: 19, pos10y: 21 },
+        { name: "创业板50", code: "--", change: -3.30, coeff120: 1.56, coeffDaily: 37.66, pos5y: 23, pos10y: 31 },
+        { name: "恒生消费", code: "--", change: 0.75, coeff120: 75.57, coeffDaily: 37.73, pos5y: 30, pos10y: 40 },
+        { name: "创业板", code: "--", change: -3.52, coeff120: 2.86, coeffDaily: 39.10, pos5y: 39, pos10y: 18 },
+        { name: "消费", code: "--", change: 1.23, coeff120: 88.10, coeffDaily: 41.44, pos5y: 19, pos10y: 29 },
+        { name: "红利", code: "--", change: 2.72, coeff120: 73.40, coeffDaily: 46.09, pos5y: 30, pos10y: 45 },
+        { name: "沪深300", code: "--", change: -2.46, coeff120: 23.54, coeffDaily: 48.60, pos5y: 35, pos10y: 47 },
+        { name: "恒生科技", code: "--", change: -0.37, coeff120: 60.03, coeffDaily: 49.78, pos5y: 30, pos10y: 21 },
+        { name: "中概互联网", code: "--", change: -0.32, coeff120: 79.63, coeffDaily: 53.34, pos5y: 56, pos10y: 21 },
+        { name: "恒生医疗", code: "--", change: 0.84, coeff120: 96.51, coeffDaily: 53.63, pos5y: 30, pos10y: 35 },
+        { name: "恒生", code: "--", change: 1.82, coeff120: 92.44, coeffDaily: 55.86, pos5y: 44, pos10y: 59 },
+        { name: "半导体", code: "--", change: -2.63, coeff120: 12.49, coeffDaily: 57.62, pos5y: 40, pos10y: 50 },
+        { name: "半导体设备", code: "--", change: -1.99, coeff120: 24.14, coeffDaily: 58.06, pos5y: 57, pos10y: 36 },
+        { name: "芯片", code: "--", change: -2.54, coeff120: 14.02, coeffDaily: 59.93, pos5y: 57, pos10y: 32 },
+        { name: "港股创新药", code: "--", change: 0.86, coeff120: 92.61, coeffDaily: 60.96, pos5y: 48, pos10y: 62 },
+        { name: "人工智能", code: "--", change: -2.57, coeff120: 20.39, coeffDaily: 63.38, pos5y: 51, pos10y: 39 },
+        { name: "纳指", code: "--", change: -1.48, coeff120: 3.78, coeffDaily: 65.01, pos5y: 59, pos10y: 40 },
+        { name: "科创50", code: "--", change: -2.52, coeff120: 26.67, coeffDaily: 65.47, pos5y: 58, pos10y: 63 },
+        { name: "上证50", code: "--", change: 0.28, coeff120: 76.00, coeffDaily: 73.50, pos5y: 43, pos10y: 69 },
+        { name: "证券", code: "--", change: -1.71, coeff120: 63.61, coeffDaily: 77.58, pos5y: 53, pos10y: 34 },
+        { name: "创新药", code: "--", change: -1.44, coeff120: 85.82, coeffDaily: 85.33, pos5y: 81, pos10y: 73 },
+        { name: "医药", code: "--", change: -0.25, coeff120: 97.88, coeffDaily: 92.92, pos5y: 63, pos10y: 83 }
     ];
 
-    // ============ 2. 状态变量 ============
-    let batchPortfolios = JSON.parse(localStorage.getItem('mingtian_batches_v1') || '{}');
-    let realQuotes = {}; // { code: {price, pct, yclose} }
-    let currentSortKey = 'num', currentSortOrder = 1;
-    let activeModalCode = null, countdownSec = 5;
-    const isProxyConfigured = PROXY_API && PROXY_API.includes('vercel.app');
-
-    // ============ 3. 核心交易逻辑 (重构版) ============
-    function getActionLogic(item, budget) {
-        const c120 = item.c120;     // 短线 RSI (0-100)
-        const cDaily = item.cDaily; // 长线估值百分位 (0-100)
-        const price = realQuotes[item.code]?.price || 0;
-        const batches = batchPortfolios[item.code] || [];
+    // 精准还原系数的计算逻辑
+    function calculateStatus(item) {
+        // 优先级1：日线级别大底 (建2)
+        if (item.coeffDaily < 0) {
+            return { text: "建2", class: "status-buy2", logic: "日线系数<0，触及极度超跌区。直接配置40%或追加20%仓位。" };
+        }
+        // 优先级2：120分大底 或 日线即将触底 (建1)
+        if (item.coeffDaily < 10 || item.coeff120 < 0) {
+            return { text: "建1", class: "status-buy1", logic: "120分系数<0或日线<10，进入建仓区，配置20%仓位。" };
+        }
+        // 优先级3：日线级别顶部 (减2)
+        if (item.coeffDaily >= 85) {
+            return { text: "减2", class: "status-sell2", logic: "日线系数>=85，进入极度高估区，建议减去剩余仓位的一半。" };
+        }
+        // 优先级4：120分钟级别顶部 (减1)
+        if (item.coeff120 >= 100) {
+            return { text: "减1", class: "status-sell1", logic: "120分钟系数突破100，建议减去总仓位的一半。" };
+        }
         
-        // 计算持仓均价、总本金、总份额
-        let totalPrin = 0, totalShares = 0;
-        batches.forEach(b => {
-            if (b.cost > 0 && b.principal > 0) {
-                totalShares += b.principal / b.cost;
-                totalPrin += b.principal;
+        return { text: "持有", class: "status-hold", logic: "未达建仓/减仓线，按纪律观望或持有底仓。" };
+    }
+
+    function formatNumber(num) {
+        return num > 0 ? `<span class="val-red">+${num.toFixed(2)}%</span>` : `<span class="val-green">${num.toFixed(2)}%</span>`;
+    }
+    
+    function formatCoeff(num) {
+        if(num < 0) return `<span class="val-green">${num.toFixed(2)}%</span>`;
+        if(num >= 85) return `<span class="val-red">${num.toFixed(2)}%</span>`;
+        return num.toFixed(2) + "%";
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        data.forEach(item => {
+            const status = calculateStatus(item);
+            
+            // 相对位置渲染条
+            const pos5yHtml = `
+                <div class="pos-container">
+                    <div class="pos-bar" style="width: ${item.pos5y}%"></div>
+                    <div class="pos-text">${item.pos5y}%</div>
+                </div>`;
+            const pos10yHtml = `
+                <div class="pos-container">
+                    <div class="pos-bar" style="width: ${item.pos10y}%"></div>
+                    <div class="pos-text">${item.pos10y}%</div>
+                </div>`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${item.name}</strong></td>
+                <td>${formatNumber(item.change)}</td>
+                <td>${formatCoeff(item.coeff120)}</td>
+                <td>${formatCoeff(item.coeffDaily)}</td>
+                <td>${pos5yHtml}</td>
+                <td>${pos10yHtml}</td>
+                <td><span class="status-badge ${status.class}">${status.text}</span></td>
+                <td class="logic-desc">${status.logic}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 排序逻辑
+    let currentSortCol = -1;
+    let currentSortAsc = true;
+    function sortTable(colIndex) {
+        const keys = ['name', 'change', 'coeff120', 'coeffDaily', 'pos5y', 'pos10y', 'statusText', 'logic'];
+        const key = keys[colIndex];
+        
+        if (currentSortCol === colIndex) {
+            currentSortAsc = !currentSortAsc;
+        } else {
+            currentSortCol = colIndex;
+            currentSortAsc = true;
+        }
+
+        rawData.sort((a, b) => {
+            let valA = a[key];
+            let valB = b[key];
+            
+            if (key === 'statusText') {
+                // 对状态进行权重排序
+                const weight = {"建2":1, "建1":2, "持有":3, "减1":4, "减2":5};
+                valA = weight[calculateStatus(a).text];
+                valB = weight[calculateStatus(b).text];
+            }
+
+            if (typeof valA === 'string') {
+                return currentSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else {
+                return currentSortAsc ? valA - valB : valB - valA;
             }
         });
-        const avgCost = totalShares > 0 ? totalPrin / totalShares : 0;
-        const currentPosPct = budget > 0 ? totalPrin / budget : 0;
-
-        // --- 优先级 1: 清仓/止盈 (风控第一) ---
-        // 减2: 长周期极度高估 -> 清仓/留底
-        if (cDaily >= CONFIG.REDUCE_2_TRIGGER) {
-            return { zone: '减2区域(清仓/留底)', action: `估值${cDaily}%极高，执行清仓/留底`, style: 'bg-rose-900/80 text-rose-300 border-rose-500', level: 4 };
-        }
-        // 减1: 短线严重超买 -> 止盈减半
-        if (c120 >= CONFIG.REDUCE_1_TRIGGER) {
-            return { zone: '减1区域(止盈50%)', action: `短线RSI${c120}超买，止盈减仓50%`, style: 'bg-amber-900/80 text-amber-300 border-amber-500', level: 3 };
-        }
-
-        // --- 优先级 2: 建仓/加仓 (左侧交易) ---
-        // 建2: 长周期极度低估 -> 补齐至40%
-        if (cDaily <= CONFIG.BUILD_2_TRIGGER) {
-            const target = budget * CONFIG.BUILD_2_PCT;
-            const need = Math.max(0, target - totalPrin);
-            return { zone: '建2区域(补至40%)', action: `估值${cDaily}%极低，补仓至40% (需￥${need.toLocaleString()})`, style: 'bg-emerald-900/80 text-emerald-300 border-emerald-500', level: 2 };
-        }
-        // 建1: 长周期低估 -> 建仓20%
-        if (cDaily <= CONFIG.BUILD_1_TRIGGER) {
-            const target = budget * CONFIG.BUILD_1_PCT;
-            const need = Math.max(0, target - totalPrin);
-            return { zone: '建1区域(建仓20%)', action: `估值${cDaily}%偏低，建仓20% (需￥${need.toLocaleString()})`, style: 'bg-teal-900/80 text-teal-300 border-teal-500', level: 2 };
-        }
-
-        // --- 优先级 3: 动态网格加仓 (基于持仓均价) ---
-        if (avgCost > 0 && price > 0 && currentPosPct < CONFIG.MAX_POS_PCT) {
-            const dropFromCost = (avgCost - price) / avgCost * 100;
-            if (dropFromCost >= CONFIG.GRID_DROP_PCT) {
-                const addAmt = budget * CONFIG.ADD_PCT;
-                return { zone: '动态加仓(网格)', action: `跌破成本${dropFromCost.toFixed(1)}%(均${avgCost.toFixed(3)})，追加10%(￥${addAmt.toLocaleString()})`, style: 'bg-cyan-900/80 text-cyan-300 border-cyan-500', level: 1 };
-            }
-        }
-
-        // --- 默认: 持有/观望 ---
-        let holdMsg = '按兵不动';
-        if (avgCost > 0) holdMsg += ` | 持仓均价: ${avgCost.toFixed(3)} | 仓位: ${(currentPosPct*100).toFixed(0)}%`;
-        return { zone: '持有/观望', action: holdMsg, style: 'bg-slate-800 text-slate-400 border-slate-700', level: 0 };
+        renderTable(rawData);
     }
 
-    // ============ 4. 行情获取 (对接 Vercel Proxy) ============
-    async function fetchQuotes() {
-        const statusDot = document.getElementById('status-dot');
-        const netStatus = document.getElementById('net-status');
-        const refreshIcon = document.getElementById('refresh-icon');
-        
-        refreshIcon.classList.add('animate-spin');
-        statusDot.className = "inline-block w-3 h-3 rounded-full bg-amber-500 animate-pulse";
-        netStatus.textContent = '连接中...';
-        netStatus.className = 'ml-2 px-1.5 py-0.5 rounded text-xs bg-amber-900/50 text-amber-300';
-
-        if (!isProxyConfigured) {
-            // 离线/模拟模式：生成模拟价格波动用于演示界面
-            etfData.forEach(item => {
-                const base = 1 + (item.num * 0.07) % 5; // 伪造基础价
-                const noise = (Math.random() - 0.5) * 0.02;
-                const price = parseFloat((base * (1 + noise)).toFixed(3));
-                const yclose = parseFloat((base * (1 + (Math.random()-0.5)*0.01)).toFixed(3));
-                const pct = yclose > 0 ? ((price - yclose) / yclose * 100) : 0;
-                realQuotes[item.code] = { price, pct, yclose };
-            });
-            statusDot.className = "inline-block w-3 h-3 rounded-full bg-slate-500";
-            netStatus.textContent = '离线/模拟';
-            netStatus.className = 'ml-2 px-1.5 py-0.5 rounded text-xs bg-slate-700 text-slate-400';
-            renderTable();
-            if (activeModalCode) updateModalContent();
-            refreshIcon.classList.remove('animate-spin');
-            return;
-        }
-
-        try {
-            const codes = etfData.map(e => e.code.toLowerCase()).join(',');
-            const res = await fetch(`${PROXY_API}?codes=${codes}`, { cache: 'no-store' });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            
-            let successCount = 0;
-            Object.keys(data).forEach(code => {
-                if (data[code] && typeof data[code].price === 'number') {
-                    realQuotes[code.toUpperCase()] = data[code];
-                    successCount++;
-                }
-            });
-            
-            statusDot.className = "inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-            netStatus.textContent = `在线 (${successCount}/${etfData.length})`;
-            netStatus.className = 'ml-2 px-1.5 py-0.5 rounded text-xs bg-emerald-900/50 text-emerald-300';
-            
-        } catch (err) {
-            console.error('行情获取失败:', err);
-            statusDot.className = "inline-block w-3 h-3 rounded-full bg-rose-500";
-            netStatus.textContent = '连接失败';
-            netStatus.className = 'ml-2 px-1.5 py-0.5 rounded text-xs bg-rose-900/50 text-rose-300';
-        } finally {
-            refreshIcon.classList.remove('animate-spin');
-            renderTable();
-            if (activeModalCode) updateModalContent();
-        }
-    }
-
-    // ============ 5. 渲染主表格 ============
-    function renderTable() {
-        const budget = parseFloat(document.getElementById('budgetInput').value) || 100000;
-        const searchKw = document.getElementById('searchInput').value.trim().toLowerCase();
-
-        document.getElementById('val-b1').innerText = (budget * CONFIG.BUILD_1_PCT).toLocaleString('zh-CN');
-        document.getElementById('val-b2').innerText = (budget * CONFIG.BUILD_2_PCT).toLocaleString('zh-CN');
-        document.getElementById('val-add').innerText = (budget * CONFIG.ADD_PCT).toLocaleString('zh-CN');
-
-        let list = etfData.map(item => ({ 
-            ...item, 
-            ...(realQuotes[item.code] || { price: 0, pct: 0 }) 
-        }));
-
-        if (searchKw) list = list.filter(i => i.name.toLowerCase().includes(searchKw) || i.code.toLowerCase().includes(searchKw));
-        list.sort((a, b) => ( (a[currentSortKey] || 0) - (b[currentSortKey] || 0) ) * currentSortOrder);
-
-        const tbody = document.getElementById('etf-tbody');
-        tbody.innerHTML = list.map(item => {
-            const logic = getActionLogic(item, budget);
-            const batches = batchPortfolios[item.code] || [];
-            
-            // 计算浮盈
-            let totalMV = 0, totalPrin = 0;
-            batches.forEach(b => {
-                totalPrin += b.principal;
-                if (item.price > 0 && b.cost > 0) totalMV += (b.principal / b.cost) * item.price;
-                else totalMV += b.principal;
-            });
-            const profit = totalMV - totalPrin;
-            const pStyle = profit >= 0 ? 'text-rose-400' : 'text-emerald-400';
-            const posPct = budget > 0 ? (totalPrin / budget * 100).toFixed(0) : 0;
-            const noteText = batches.length ? `${batches.length}笔 | ${posPct}% | ${profit>=0?'+':''}${profit.toFixed(0)}` : '📝 点击记账';
-
-            const pctColor = item.pct > 0 ? 'text-rose-400' : (item.pct < 0 ? 'text-emerald-400' : 'text-slate-300');
-            const pctStr = item.pct > 0 ? `+${item.pct.toFixed(2)}%` : `${item.pct.toFixed(2)}%`;
-
-            // 输入框颜色提示
-            const c120Color = item.c120 >= CONFIG.REDUCE_1_TRIGGER ? 'text-rose-400' : (item.c120 <= 30 ? 'text-emerald-400' : 'text-cyan-300');
-            const cDailyColor = item.cDaily >= CONFIG.REDUCE_2_TRIGGER ? 'text-rose-400' : (item.cDaily <= CONFIG.BUILD_2_TRIGGER ? 'text-emerald-400' : (item.cDaily <= CONFIG.BUILD_1_TRIGGER ? 'text-teal-300' : 'text-emerald-300'));
-
-            return `<tr class="hover:bg-slate-800/60 transition-colors">
-                <td class="p-3 text-slate-500 font-mono text-xs">${item.num}</td>
-                <td class="p-3 font-bold text-white whitespace-nowrap">${item.name} <span class="text-xs font-normal text-slate-500 ml-1">${item.code}</span></td>
-                <td class="p-3 font-mono font-bold text-slate-100 text-right">${item.price > 0 ? item.price.toFixed(3) : '<span class="text-slate-500">-</span>'}</td>
-                <td class="p-3 font-mono font-bold text-right ${pctColor}">${pctStr}</td>
-                
-                <td class="p-2 text-center">
-                    <input type="number" value="${item.c120}" onchange="updateCoeff('${item.code}', 'c120', this.value)" 
-                        class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-18 font-mono text-xs text-center ${c120Color} focus:outline-none focus:border-emerald-500" title="短线RSI 0-100">
-                </td>
-                <td class="p-2 text-center">
-                    <input type="number" value="${item.cDaily}" onchange="updateCoeff('${item.code}', 'cDaily', this.value)" 
-                        class="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-18 font-mono text-xs text-center ${cDailyColor} focus:outline-none focus:border-emerald-500" title="长线估值百分位 0-100">
-                </td>
-
-                <td class="p-3 text-center">
-                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${logic.style}">${logic.zone}</span>
-                </td>
-                <td class="p-3 text-xs font-medium text-slate-200 max-w-xs truncate block" title="${logic.action}">${logic.action}</td>
-                
-                <td class="p-3 text-center font-mono text-xs ${pStyle}">
-                    ${totalPrin > 0 ? `￥${totalPrin.toLocaleString()} (${posPct}%)<br>${profit>=0?'+':''}￥${profit.toFixed(0)}` : '<span class="text-slate-500">空仓</span>'}
-                </td>
-                
-                <td class="p-3 text-center">
-                    <button onclick="openModal('${item.code}', '${item.name}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-emerald-400 transition shadow whitespace-nowrap">
-                        ${noteText}
-                    </button>
-                </td>
-            </tr>`;
-        }).join('');
-    }
-
-    function updateCoeff(code, key, val) {
-        const t = etfData.find(e => e.code === code);
-        if (t) { t[key] = parseFloat(val) || 0; renderTable(); }
-    }
-    function handleSort(key) {
-        if (currentSortKey === key) currentSortOrder *= -1;
-        else { currentSortKey = key; currentSortOrder = 1; }
-        renderTable();
-    }
-
-    // ============ 6. 弹窗 & 批次管理 ============
-    function openModal(code, name) {
-        activeModalCode = code;
-        document.getElementById('modalTitle').innerText = `${name} (${code}) - 多批次投入明细`;
-        document.getElementById('newBatchDate').valueAsDate = new Date();
-        document.getElementById('newBatchPrice').value = realQuotes[code]?.price?.toFixed(3) || '';
-        document.getElementById('newBatchPrincipal').value = '';
-        updateModalContent();
-        document.getElementById('noteModal').classList.remove('hidden');
-        document.getElementById('noteModal').classList.add('flex');
-    }
-    function closeModal() {
-        document.getElementById('noteModal').classList.remove('flex');
-        document.getElementById('noteModal').classList.add('hidden');
-        activeModalCode = null; renderTable();
-    }
-    function updateModalContent() {
-        if (!activeModalCode) return;
-        const batches = batchPortfolios[activeModalCode] || [];
-        const price = realQuotes[activeModalCode]?.price || 0;
-        let totalPrin = 0, totalMV = 0;
-        const tbody = document.getElementById('batchTableBody');
-        
-        tbody.innerHTML = batches.map((b, i) => {
-            totalPrin += b.principal;
-            let shares = 0, mv = b.principal;
-            if (price > 0 && b.cost > 0) { shares = b.principal / b.cost; mv = shares * price; }
-            totalMV += mv;
-            const p = mv - b.principal;
-            const pStyle = p >= 0 ? 'text-rose-400' : 'text-emerald-400';
-            return `<tr class="hover:bg-slate-700/50">
-                <td class="py-2 px-2 font-mono text-slate-300">${b.date}</td>
-                <td class="py-2 px-2 font-mono text-right text-slate-200">￥${b.cost.toFixed(3)}</td>
-                <td class="py-2 px-2 font-mono text-right text-slate-200">￥${b.principal.toLocaleString()}</td>
-                <td class="py-2 px-2 font-mono text-right text-cyan-400">${shares > 0 ? shares.toFixed(0) : '-'}</td>
-                <td class="py-2 px-2 font-mono text-right text-white">￥${mv.toFixed(0)}</td>
-                <td class="py-2 px-2 font-mono text-right ${pStyle}">${p>=0?'+':''}￥${p.toFixed(2)}</td>
-                <td class="py-2 px-2 text-center"><button onclick="deleteBatch('${activeModalCode}', ${i})" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-0.5 rounded bg-rose-950/40 border border-rose-900 text-xs">删</button></td>
-            </tr>`;
-        }).join('') || `<tr><td colspan="7" class="py-4 text-center text-slate-500">暂无买入批次记录，请在上方添加</td></tr>`;
-        
-        const tp = totalMV - totalPrin;
-        const tr = totalPrin > 0 ? (tp/totalPrin)*100 : 0;
-        document.getElementById('modalCurrentPrice').innerText = price > 0 ? `￥${price.toFixed(3)}` : '获取中...';
-        document.getElementById('modalSummaryVal').innerText = `￥${totalPrin.toLocaleString()} / ￥${totalMV.toFixed(0)}`;
-        document.getElementById('modalSummaryProfit').innerHTML = `${tp>=0?'+':''}￥${tp.toFixed(2)} (${tr>=0?'+':''}${tr.toFixed(2)}%)`;
-        document.getElementById('modalSummaryProfit').className = `font-mono text-base font-bold ${tp>=0?'text-rose-400':'text-emerald-400'}`;
-    }
-    function addBatch() {
-        if (!activeModalCode) return;
-        const date = document.getElementById('newBatchDate').value;
-        const cost = parseFloat(document.getElementById('newBatchPrice').value);
-        const principal = parseFloat(document.getElementById('newBatchPrincipal').value);
-        if (!date || !cost || !principal || cost<=0 || principal<=0) return alert('请填写完整有效的日期、均价和本金！');
-        
-        (batchPortfolios[activeModalCode] = batchPortfolios[activeModalCode] || []).push({date, cost, principal});
-        localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios));
-        if (window.saveToCloud) window.saveToCloud();
-        
-        document.getElementById('newBatchPrice').value = '';
-        document.getElementById('newBatchPrincipal').value = '';
-        updateModalContent();
-        renderTable(); // 同步更新主表仓位显示
-    }
-    function deleteBatch(code, idx) {
-        if (batchPortfolios[code]) {
-            batchPortfolios[code].splice(idx, 1);
-            localStorage.setItem('mingtian_batches_v1', JSON.stringify(batchPortfolios));
-            if (window.saveToCloud) window.saveToCloud();
-            updateModalContent();
-            renderTable();
-        }
-    }
-
-    // ============ 7. 定时器 & 初始化 ============
-    setInterval(() => {
-        countdownSec--;
-        if (countdownSec <= 0) { countdownSec = 5; fetchQuotes(); }
-        document.getElementById('countdown').innerText = countdownSec;
-    }, 1000);
-
-    // 首次加载
-    renderTable(); // 先渲染骨架不等数据
-    fetchQuotes(); // 再去拿数据
-
-    // ============ 8. GitHub Gist 云端同步 (保留你原有功能) ============
-    (function() {
-        const GIST_CONFIG = {
-            token: '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', // 你的 Token
-            gistId: '9d014412e7f9ea56862152c905f37d05',
-            filename: 'etf-data.json'
-        };
-
-        async function syncFromCloud() {
-            try {
-                let res = await fetch(`https://api.github.com/gists/${GIST_CONFIG.gistId}`, {
-                    headers: { 'Authorization': `token ${GIST_CONFIG.token}` }
-                });
-                if (res.ok) {
-                    let data = await res.json();
-                    let file = data.files[GIST_CONFIG.filename] || Object.values(data.files)[0];
-                    if (file && file.content) {
-                        localStorage.setItem('mingtian_batches_v1', file.content);
-                        batchPortfolios = JSON.parse(file.content || '{}');
-                        console.log('☁️ 云端批次数据同步成功');
-                        renderTable();
-                    }
-                }
-            } catch (e) { console.log('从云端加载数据失败，使用本地数据', e); }
-        }
-
-        window.saveToCloud = async function() {
-            try {
-                let localData = localStorage.getItem('mingtian_batches_v1') || '{}';
-                await fetch(`https://api.github.com/gists/${GIST_CONFIG.gistId}`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': `token ${GIST_CONFIG.token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ files: { [GIST_CONFIG.filename]: { content: localData } } })
-                });
-                console.log('☁️ 已自动同步批次数据到云端 Gist');
-            } catch (e) { console.error('保存到云端失败', e); }
-        };
-
-        // 页面加载时同步云端批次数据
-        syncFromCloud();
-    })();
+    // 默认按日线系数从小到大排序(寻找建仓机会)
+    currentSortCol = 3; 
+    currentSortAsc = true;
+    rawData.sort((a, b) => a.coeffDaily - b.coeffDaily);
+    
+    // 初始化渲染
+    renderTable(rawData);
 </script>
+
 </body>
 </html>
