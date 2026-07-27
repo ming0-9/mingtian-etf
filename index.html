@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>交易所风格行业走势图</title>
-  <!-- 引入 KLineChart 金融图表核心库 -->
-  <script src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
+  <!-- 更换为更稳定的 jsDelivr CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/klinecharts/dist/klinecharts.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -21,7 +21,6 @@
       flex-direction: column;
       overflow: hidden;
     }
-    /* 顶栏控制区 */
     .toolbar {
       display: flex;
       align-items: center;
@@ -78,23 +77,27 @@
       color: #ffffff;
       font-weight: 500;
     }
-    /* 图表容器 */
     #chart-container {
       flex: 1;
       width: 100%;
+    }
+    .error-tip {
+      display: none;
+      color: #f23645;
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-  <!-- 控制顶栏 -->
   <div class="toolbar">
     <div class="title-area">
       <span class="stock-title">半导体板块指数 (880491)</span>
       <span class="stock-tag">行业指数</span>
     </div>
 
-    <!-- 主图指标切换 -->
     <div class="btn-group">
       <span class="group-label">主图:</span>
       <button class="btn active" id="btn-boll" onclick="switchMainIndicator('BOLL')">BOLL</button>
@@ -102,7 +105,6 @@
       <button class="btn" id="btn-none" onclick="switchMainIndicator('NONE')">无</button>
     </div>
 
-    <!-- 副图指标开关 -->
     <div class="btn-group" style="margin-left: 12px;">
       <span class="group-label">副图:</span>
       <button class="btn active" id="btn-macd" onclick="toggleSubIndicator('MACD')">MACD</button>
@@ -111,125 +113,118 @@
     </div>
   </div>
 
-  <!-- 图表渲染区域 -->
+  <div id="error-tip" class="error-tip">图表库加载失败，请检查网络连接或确认 CDN 是否被防火墙拦截。</div>
   <div id="chart-container"></div>
 
   <script>
-    // 1. 生成标准的 OHLCV 金融历史数据
-    function generateMockData() {
-      const data = [];
-      let baseTime = new Date('2025-01-01').getTime();
-      let basePrice = 1500;
-
-      for (let i = 0; i < 250; i++) {
-        const changeRatio = (Math.random() - 0.49) * 0.04;
-        const open = basePrice;
-        const close = open * (1 + changeRatio);
-        const high = Math.max(open, close) * (1 + Math.random() * 0.015);
-        const low = Math.min(open, close) * (1 - Math.random() * 0.015);
-        const volume = Math.floor(Math.random() * 900000) + 100000;
-
-        data.push({
-          timestamp: baseTime + i * 24 * 60 * 60 * 1000,
-          open: Number(open.toFixed(2)),
-          high: Number(high.toFixed(2)),
-          low: Number(low.toFixed(2)),
-          close: Number(close.toFixed(2)),
-          volume: volume
-        });
-
-        basePrice = close;
+    window.addEventListener('load', () => {
+      // 检查库是否成功加载
+      if (typeof klinecharts === 'undefined') {
+        document.getElementById('error-tip').style.display = 'block';
+        return;
       }
-      return data;
-    }
 
-    // 2. 初始化图表，配置交易所暗色配色方案
-    const chart = klinecharts.init('chart-container', {
-      styles: {
-        grid: {
-          horizontal: { color: '#2a2e39', style: 'dashed' },
-          vertical: { color: '#2a2e39', style: 'dashed' }
-        },
-        candle: {
-          type: 'candle_solid',
-          bar: {
-            upColor: '#089981',        // 涨（绿/交易所习惯）
-            downColor: '#f23645',      // 跌（红）
-            noChangeColor: '#888888',
-            upBorderColor: '#089981',
-            downBorderColor: '#f23645',
-            upWickColor: '#089981',
-            downWickColor: '#f23645'
-          }
-        },
-        technicalIndicator: {
-          bar: {
-            upColor: 'rgba(8, 153, 129, 0.6)',
-            downColor: 'rgba(242, 54, 69, 0.6)'
+      function generateMockData() {
+        const data = [];
+        let baseTime = new Date('2025-01-01').getTime();
+        let basePrice = 1500;
+
+        for (let i = 0; i < 250; i++) {
+          const changeRatio = (Math.random() - 0.49) * 0.04;
+          const open = basePrice;
+          const close = open * (1 + changeRatio);
+          const high = Math.max(open, close) * (1 + Math.random() * 0.015);
+          const low = Math.min(open, close) * (1 - Math.random() * 0.015);
+          const volume = Math.floor(Math.random() * 900000) + 100000;
+
+          data.push({
+            timestamp: baseTime + i * 24 * 60 * 60 * 1000,
+            open: Number(open.toFixed(2)),
+            high: Number(high.toFixed(2)),
+            low: Number(low.toFixed(2)),
+            close: Number(close.toFixed(2)),
+            volume: volume
+          });
+
+          basePrice = close;
+        }
+        return data;
+      }
+
+      const chart = klinecharts.init('chart-container', {
+        styles: {
+          grid: {
+            horizontal: { color: '#2a2e39', style: 'dashed' },
+            vertical: { color: '#2a2e39', style: 'dashed' }
+          },
+          candle: {
+            type: 'candle_solid',
+            bar: {
+              upColor: '#089981',
+              downColor: '#f23645',
+              noChangeColor: '#888888',
+              upBorderColor: '#089981',
+              downBorderColor: '#f23645',
+              upWickColor: '#089981',
+              downWickColor: '#f23645'
+            }
+          },
+          technicalIndicator: {
+            bar: {
+              upColor: 'rgba(8, 153, 129, 0.6)',
+              downColor: 'rgba(242, 54, 69, 0.6)'
+            }
           }
         }
+      });
+
+      chart.applyNewData(generateMockData());
+
+      let currentMainIndicator = 'BOLL';
+      chart.createIndicator('BOLL', false, { id: 'candle_pane' });
+      chart.createIndicator('VOL');
+
+      const subPanes = {};
+      subPanes['MACD'] = chart.createIndicator('MACD');
+      subPanes['RSI'] = chart.createIndicator('RSI');
+
+      window.switchMainIndicator = function(name) {
+        if (currentMainIndicator !== 'NONE') {
+          chart.overrideIndicator({ name: currentMainIndicator, visible: false }, 'candle_pane');
+        }
+
+        document.getElementById('btn-boll').classList.remove('active');
+        document.getElementById('btn-ma').classList.remove('active');
+        document.getElementById('btn-none').classList.remove('active');
+
+        currentMainIndicator = name;
+
+        if (name === 'BOLL') {
+          chart.createIndicator('BOLL', false, { id: 'candle_pane' });
+          document.getElementById('btn-boll').classList.add('active');
+        } else if (name === 'MA') {
+          chart.createIndicator('MA', false, { id: 'candle_pane' });
+          document.getElementById('btn-ma').classList.add('active');
+        } else {
+          document.getElementById('btn-none').classList.add('active');
+        }
       }
-    });
 
-    // 3. 填充行业指数数据
-    chart.applyNewData(generateMockData());
-
-    // 4. 默认创建常用指标
-    // 主图: BOLL (布林线 N=20, P=2)
-    let currentMainIndicator = 'BOLL';
-    chart.createIndicator('BOLL', false, { id: 'candle_pane' });
-
-    // 副图 1: 成交量 VOL
-    chart.createIndicator('VOL');
-
-    // 副图 2 & 3: MACD 和 RSI
-    const subPanes = {};
-    subPanes['MACD'] = chart.createIndicator('MACD');
-    subPanes['RSI'] = chart.createIndicator('RSI');
-
-    // 5. 切换主图指标（BOLL / MA / 清空）
-    function switchMainIndicator(name) {
-      // 清除之前的主图指标
-      if (currentMainIndicator !== 'NONE') {
-        chart.overrideIndicator({ name: currentMainIndicator, visible: false }, 'candle_pane');
+      window.toggleSubIndicator = function(name) {
+        const btn = document.getElementById(`btn-${name.toLowerCase()}`);
+        if (subPanes[name]) {
+          chart.removeIndicator(subPanes[name]);
+          delete subPanes[name];
+          btn.classList.remove('active');
+        } else {
+          subPanes[name] = chart.createIndicator(name);
+          btn.classList.add('active');
+        }
       }
 
-      document.getElementById('btn-boll').classList.remove('active');
-      document.getElementById('btn-ma').classList.remove('active');
-      document.getElementById('btn-none').classList.remove('active');
-
-      currentMainIndicator = name;
-
-      if (name === 'BOLL') {
-        chart.createIndicator('BOLL', false, { id: 'candle_pane' });
-        document.getElementById('btn-boll').classList.add('active');
-      } else if (name === 'MA') {
-        chart.createIndicator('MA', false, { id: 'candle_pane' });
-        document.getElementById('btn-ma').classList.add('active');
-      } else {
-        document.getElementById('btn-none').classList.add('active');
-      }
-    }
-
-    // 6. 开启 / 关闭副图指标
-    function toggleSubIndicator(name) {
-      const btn = document.getElementById(`btn-${name.toLowerCase()}`);
-
-      if (subPanes[name]) {
-        // 存在则销毁
-        chart.removeIndicator(subPanes[name]);
-        delete subPanes[name];
-        btn.classList.remove('active');
-      } else {
-        // 不存在则新建副图视窗
-        subPanes[name] = chart.createIndicator(name);
-        btn.classList.add('active');
-      }
-    }
-
-    // 窗口尺寸变化自适应
-    window.addEventListener('resize', () => {
-      chart.resize();
+      window.addEventListener('resize', () => {
+        chart.resize();
+      });
     });
   </script>
 </body>
