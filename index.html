@@ -1,42 +1,236 @@
-import { init } from 'klinecharts';
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>交易所风格行业走势图</title>
+  <!-- 引入 KLineChart 金融图表核心库 -->
+  <script src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #121418;
+      color: #d1d4dc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    /* 顶栏控制区 */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 20px;
+      background-color: #1a1d24;
+      border-bottom: 1px solid #2a2e39;
+      flex-wrap: wrap;
+    }
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 12px;
+    }
+    .stock-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f3fa;
+    }
+    .stock-tag {
+      font-size: 11px;
+      background: #2b313a;
+      color: #2962ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .group-label {
+      font-size: 12px;
+      color: #848e9c;
+      margin-right: 4px;
+    }
+    .btn {
+      background-color: #2b313a;
+      color: #b7bdc6;
+      border: 1px solid transparent;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background-color: #363c4e;
+      color: #f0f3fa;
+    }
+    .btn.active {
+      background-color: #2962ff;
+      color: #ffffff;
+      font-weight: 500;
+    }
+    /* 图表容器 */
+    #chart-container {
+      flex: 1;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
 
-// 1. 初始化图表容器（支持交易所暗色风格）
-const chart = init('chart-container', {
-  styles: {
-    grid: { show: true },
-    candle: { type: 'candle_solid' } // 标准蜡烛图
-  }
-});
+  <!-- 控制顶栏 -->
+  <div class="toolbar">
+    <div class="title-area">
+      <span class="stock-title">半导体板块指数 (880491)</span>
+      <span class="stock-tag">行业指数</span>
+    </div>
 
-// 2. 主图叠加 BOLL 指标（与交易所一致）
-chart.createIndicator({
-  name: 'BOLL',
-  calcParams: [20, 2], // N=20, k=2
-  paneId: 'candle_pane' // 叠加在主图 K 线区域
-}, true);
+    <!-- 主图指标切换 -->
+    <div class="btn-group">
+      <span class="group-label">主图:</span>
+      <button class="btn active" id="btn-boll" onclick="switchMainIndicator('BOLL')">BOLL</button>
+      <button class="btn" id="btn-ma" onclick="switchMainIndicator('MA')">MA</button>
+      <button class="btn" id="btn-none" onclick="switchMainIndicator('NONE')">无</button>
+    </div>
 
-// 3. 创建副图指标：成交量 VOL
-chart.createIndicator({
-  name: 'VOL',
-  calcParams: [5, 10]
-});
+    <!-- 副图指标开关 -->
+    <div class="btn-group" style="margin-left: 12px;">
+      <span class="group-label">副图:</span>
+      <button class="btn active" id="btn-macd" onclick="toggleSubIndicator('MACD')">MACD</button>
+      <button class="btn active" id="btn-rsi" onclick="toggleSubIndicator('RSI')">RSI</button>
+      <button class="btn" id="btn-kdj" onclick="toggleSubIndicator('KDJ')">KDJ</button>
+    </div>
+  </div>
 
-// 4. 创建副图指标：MACD
-chart.createIndicator({
-  name: 'MACD',
-  calcParams: [12, 26, 9]
-});
+  <!-- 图表渲染区域 -->
+  <div id="chart-container"></div>
 
-// 5. 创建副图指标：RSI
-chart.createIndicator({
-  name: 'RSI',
-  calcParams: [6, 12, 24]
-});
+  <script>
+    // 1. 生成标准的 OHLCV 金融历史数据
+    function generateMockData() {
+      const data = [];
+      let baseTime = new Date('2025-01-01').getTime();
+      let basePrice = 1500;
 
-// 6. 注入行业板块/交易所 K 线数据 (格式为包含 open, high, low, close, volume, timestamp 的数组)
-const industryData = [
-  { timestamp: 1700000000000, open: 1200.5, high: 1215.0, low: 1195.2, close: 1210.0, volume: 5400000 },
-  // ... 更多历史数据
-];
+      for (let i = 0; i < 250; i++) {
+        const changeRatio = (Math.random() - 0.49) * 0.04;
+        const open = basePrice;
+        const close = open * (1 + changeRatio);
+        const high = Math.max(open, close) * (1 + Math.random() * 0.015);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.015);
+        const volume = Math.floor(Math.random() * 900000) + 100000;
 
-chart.applyNewData(industryData);
+        data.push({
+          timestamp: baseTime + i * 24 * 60 * 60 * 1000,
+          open: Number(open.toFixed(2)),
+          high: Number(high.toFixed(2)),
+          low: Number(low.toFixed(2)),
+          close: Number(close.toFixed(2)),
+          volume: volume
+        });
+
+        basePrice = close;
+      }
+      return data;
+    }
+
+    // 2. 初始化图表，配置交易所暗色配色方案
+    const chart = klinecharts.init('chart-container', {
+      styles: {
+        grid: {
+          horizontal: { color: '#2a2e39', style: 'dashed' },
+          vertical: { color: '#2a2e39', style: 'dashed' }
+        },
+        candle: {
+          type: 'candle_solid',
+          bar: {
+            upColor: '#089981',        // 涨（绿/交易所习惯）
+            downColor: '#f23645',      // 跌（红）
+            noChangeColor: '#888888',
+            upBorderColor: '#089981',
+            downBorderColor: '#f23645',
+            upWickColor: '#089981',
+            downWickColor: '#f23645'
+          }
+        },
+        technicalIndicator: {
+          bar: {
+            upColor: 'rgba(8, 153, 129, 0.6)',
+            downColor: 'rgba(242, 54, 69, 0.6)'
+          }
+        }
+      }
+    });
+
+    // 3. 填充行业指数数据
+    chart.applyNewData(generateMockData());
+
+    // 4. 默认创建常用指标
+    // 主图: BOLL (布林线 N=20, P=2)
+    let currentMainIndicator = 'BOLL';
+    chart.createIndicator('BOLL', false, { id: 'candle_pane' });
+
+    // 副图 1: 成交量 VOL
+    chart.createIndicator('VOL');
+
+    // 副图 2 & 3: MACD 和 RSI
+    const subPanes = {};
+    subPanes['MACD'] = chart.createIndicator('MACD');
+    subPanes['RSI'] = chart.createIndicator('RSI');
+
+    // 5. 切换主图指标（BOLL / MA / 清空）
+    function switchMainIndicator(name) {
+      // 清除之前的主图指标
+      if (currentMainIndicator !== 'NONE') {
+        chart.overrideIndicator({ name: currentMainIndicator, visible: false }, 'candle_pane');
+      }
+
+      document.getElementById('btn-boll').classList.remove('active');
+      document.getElementById('btn-ma').classList.remove('active');
+      document.getElementById('btn-none').classList.remove('active');
+
+      currentMainIndicator = name;
+
+      if (name === 'BOLL') {
+        chart.createIndicator('BOLL', false, { id: 'candle_pane' });
+        document.getElementById('btn-boll').classList.add('active');
+      } else if (name === 'MA') {
+        chart.createIndicator('MA', false, { id: 'candle_pane' });
+        document.getElementById('btn-ma').classList.add('active');
+      } else {
+        document.getElementById('btn-none').classList.add('active');
+      }
+    }
+
+    // 6. 开启 / 关闭副图指标
+    function toggleSubIndicator(name) {
+      const btn = document.getElementById(`btn-${name.toLowerCase()}`);
+
+      if (subPanes[name]) {
+        // 存在则销毁
+        chart.removeIndicator(subPanes[name]);
+        delete subPanes[name];
+        btn.classList.remove('active');
+      } else {
+        // 不存在则新建副图视窗
+        subPanes[name] = chart.createIndicator(name);
+        btn.classList.add('active');
+      }
+    }
+
+    // 窗口尺寸变化自适应
+    window.addEventListener('resize', () => {
+      chart.resize();
+    });
+  </script>
+</body>
+</html>
