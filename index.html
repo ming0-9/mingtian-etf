@@ -112,12 +112,10 @@
                             <th class="p-3">板块名称 / 代码</th>
                             <th class="p-3 text-right">最新价</th>
                             <th class="p-3 text-right sortable text-rose-300" onclick="handleSort('pct')">涨跌幅 ↕</th>
-                            <!-- 估值指标列 -->
                             <th class="p-3 text-center sortable text-cyan-300" onclick="handleSort('pe')">PE(TTM) / 分位 ↕</th>
                             <th class="p-3 text-center sortable text-blue-300" onclick="handleSort('pb')">PB / 分位 ↕</th>
                             <th class="p-3 text-center sortable text-amber-300" onclick="handleSort('divYield')">股息率 / 分位 ↕</th>
                             <th class="p-3 text-center">估值状态</th>
-                            <!-- 动量系数与指令 -->
                             <th class="p-3 text-center sortable text-teal-300" onclick="handleSort('c120')">120m ↕</th>
                             <th class="p-3 text-center sortable text-emerald-300" onclick="handleSort('cDaily')">日线 ↕</th>
                             <th class="p-3 text-center sortable text-indigo-300" onclick="handleSort('cWeekly')">周线 ↕</th>
@@ -136,25 +134,38 @@
 
     <!-- 弹窗：交易所风格 K线走势图与指标 -->
     <div id="chartModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <!-- ... 原 K线弹窗代码保持不变 ... -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-5xl w-full p-5 space-y-4 shadow-2xl text-slate-100 max-h-[95vh] flex flex-col">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-6xl w-full p-5 space-y-4 shadow-2xl text-slate-100 max-h-[95vh] flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-3">
                     <h3 id="chartModalTitle" class="text-lg font-bold text-emerald-400">行业板块走势图</h3>
-                    <span class="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-700">交易所暗色交易风格</span>
+                    <span class="text-xs bg-slate-900 px-2 py-1 rounded text-slate-400 border border-slate-700">多周期量化交易视图</span>
                 </div>
                 <button onclick="closeChartModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
             </div>
             
-            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-700 text-xs">
-                <div class="flex items-center gap-2">
-                    <span class="text-slate-400">主图指标:</span>
-                    <button class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold border border-emerald-500" id="c-btn-boll" onclick="switchChartMain('BOLL')">BOLL</button>
-                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600" id="c-btn-ma" onclick="switchChartMain('MA')">MA</button>
-                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600" id="c-btn-none" onclick="switchChartMain('NONE')">无</button>
+            <!-- 走势图工具栏：新增周期切换 -->
+            <div class="flex flex-wrap items-center gap-4 bg-slate-900/90 p-3 rounded-xl border border-slate-700 text-xs">
+                
+                <!-- 周期切换 (新增) -->
+                <div class="flex items-center gap-2 border-r border-slate-700 pr-4">
+                    <span class="text-slate-400 font-bold">周期:</span>
+                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600 transition" id="c-btn-period-120m" onclick="switchChartPeriod('120m')">120分</button>
+                    <button class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold border border-emerald-500 transition" id="c-btn-period-daily" onclick="switchChartPeriod('daily')">日线</button>
+                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600 transition" id="c-btn-period-weekly" onclick="switchChartPeriod('weekly')">周线</button>
+                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600 transition" id="c-btn-period-yearly" onclick="switchChartPeriod('yearly')">年线</button>
                 </div>
+
+                <!-- 主图指标 -->
+                <div class="flex items-center gap-2 border-r border-slate-700 pr-4">
+                    <span class="text-slate-400">主图:</span>
+                    <button class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold border border-emerald-500" id="c-btn-boll" onclick="switchChartMain('BOLL')">BOLL</button>
+                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600" id="c-btn-ma" onclick="switchChartMain('MA')">均线 (MA)</button>
+                    <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600" id="c-btn-none" onclick="switchChartMain('NONE')">隐藏</button>
+                </div>
+
+                <!-- 副图指标 -->
                 <div class="flex items-center gap-2">
-                    <span class="text-slate-400">副图指标:</span>
+                    <span class="text-slate-400">副图:</span>
                     <button class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold border border-emerald-500" id="c-btn-vol" onclick="toggleChartSub('VOL')">VOL</button>
                     <button class="px-2.5 py-1 rounded bg-emerald-600 text-white font-bold border border-emerald-500" id="c-btn-macd" onclick="toggleChartSub('MACD')">MACD</button>
                     <button class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600" id="c-btn-rsi" onclick="toggleChartSub('RSI')">RSI</button>
@@ -162,7 +173,7 @@
                 </div>
             </div>
 
-            <div id="kline-chart-container" class="w-full h-[500px] bg-slate-900 rounded-xl border border-slate-700 overflow-hidden"></div>
+            <div id="kline-chart-container" class="w-full h-[550px] bg-slate-900 rounded-xl border border-slate-700 overflow-hidden"></div>
 
             <div class="flex justify-end pt-1">
                 <button onclick="closeChartModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold">关闭图表</button>
@@ -172,7 +183,7 @@
 
     <!-- 弹窗：批次投入日记账与估值深钻 -->
     <div id="noteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <!-- ... 原记账弹窗代码保持不变 ... -->
+        <!-- 原有记账弹窗代码（无修改，保持折叠以节约空间） -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 id="modalTitle" class="text-lg font-bold text-emerald-400">板块详情与记账</h3>
@@ -184,8 +195,7 @@
                     <span>📊 估值指标全周期分析面板</span>
                     <span id="modalValuationBadge" class="px-2 py-0.5 rounded text-[10px]">--</span>
                 </div>
-                <div id="modalValuationGrid" class="grid grid-cols-3 gap-3 text-xs">
-                </div>
+                <div id="modalValuationGrid" class="grid grid-cols-3 gap-3 text-xs"></div>
             </div>
 
             <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700 flex justify-between items-center text-xs">
@@ -232,8 +242,7 @@
                             <th class="py-2 text-center">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="batchTableBody" class="divide-y divide-slate-700/50">
-                    </tbody>
+                    <tbody id="batchTableBody" class="divide-y divide-slate-700/50"></tbody>
                 </table>
             </div>
 
@@ -244,7 +253,7 @@
     </div>
 
     <script>
-        // 数据集：加入 cWeekly (周线) 和 cYearly (年线) 的默认值
+        // 数据集保持不变
         const etfData = [
             { num: 1, name: "医药ETF易方达", code: "SH512010", c120: 80, cDaily: 86.19, cWeekly: 81.5, cYearly: 75.0, pe: 26.5, pePct: { '2Y': 18, '5Y': 12, '10Y': 15 }, pb: 3.1, pbPct: { '2Y': 15, '5Y': 10, '10Y': 14 }, divYield: 1.2, divPct: { '2Y': 75, '5Y': 82, '10Y': 88 } },
             { num: 2, name: "证券ETF国泰", code: "SH512880", c120: 95, cDaily: 102.23, cWeekly: 90.1, cYearly: 85.5, pe: 18.2, pePct: { '2Y': 82, '5Y': 75, '10Y': 68 }, pb: 1.3, pbPct: { '2Y': 70, '5Y': 62, '10Y': 55 }, divYield: 2.1, divPct: { '2Y': 40, '5Y': 45, '10Y': 50 } },
@@ -288,7 +297,7 @@
         ];
 
         // 状态管理
-        let selectedPeriod = '5Y'; // 默认 5Y
+        let selectedPeriod = '5Y';
         let batchPortfolios = JSON.parse(localStorage.getItem('mingtian_batches_v2') || '{}');
         let realQuotes = {};
         let currentSortKey = 'num';
@@ -296,10 +305,11 @@
         let activeModalCode = null;
         let countdownSec = 5;
 
-        // KLineCharts 状态管理
+        // KLineCharts 状态管理 (新增周期变量)
         let activeChart = null;
         let chartMainIndicator = 'BOLL';
         let chartSubPanes = {};
+        let chartCurrentPeriod = 'daily'; // 默认周期为日线
 
         function setPeriod(period) {
             selectedPeriod = period;
@@ -423,7 +433,6 @@
                     style = 'bg-slate-800 text-slate-400 border-slate-700';
                 }
             }
-
             return { zone, action, style };
         }
 
@@ -509,16 +518,12 @@
                         </td>
                         <td class="p-3 font-mono font-bold text-slate-100 text-right">${item.quotePrice > 0 ? item.quotePrice.toFixed(3) : '获取中'}</td>
                         <td class="p-3 font-mono font-bold text-right ${pctStyle}">${pctText}</td>
-                        
-                        <!-- 估值数据列 -->
                         <td class="p-3 text-center font-mono text-cyan-300 text-xs">${peDisplay}</td>
                         <td class="p-3 text-center font-mono text-blue-300 text-xs">${pbDisplay}</td>
                         <td class="p-3 text-center font-mono text-amber-300 text-xs">${divDisplay}</td>
                         <td class="p-3 text-center">
                             <span class="px-2 py-0.5 rounded text-[11px] border ${valStatus.style}">${valStatus.label}</span>
                         </td>
-
-                        <!-- 动量系数修改框 (新增周线与年线) -->
                         <td class="p-3 text-center">
                             <input type="number" value="${item.c120}" onchange="updateCoeff('${item.code}', 'c120', this.value)" 
                                 class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 w-14 font-mono text-xs text-center text-teal-300 focus:outline-none focus:border-emerald-500">
@@ -535,14 +540,10 @@
                             <input type="number" value="${item.cYearly}" onchange="updateCoeff('${item.code}', 'cYearly', this.value)" 
                                 class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 w-14 font-mono text-xs text-center text-purple-300 focus:outline-none focus:border-emerald-500">
                         </td>
-
-                        <!-- 逻辑指令 -->
                         <td class="p-3 text-xs font-medium text-slate-200">
                             <span class="inline-block px-2 py-0.5 rounded text-xs border ${logic.style} mr-1">${logic.zone}</span>
                             ${logic.action}
                         </td>
-                        
-                        <!-- 走势与记账按钮列 -->
                         <td class="p-3 text-center space-x-1">
                             <button onclick="openChartModal('${item.code}', '${item.name}', ${item.quotePrice || 10})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-emerald-400 transition shadow">
                                 📈 走势
@@ -558,12 +559,17 @@
         }
 
         // ==========================================
-        // KLineCharts 交互控制逻辑
+        // KLineCharts 交互控制与周期切换逻辑
         // ==========================================
         function openChartModal(code, name, currentPrice) {
+            activeModalCode = code;
             document.getElementById('chartModalTitle').innerText = `${name} (${code}) - 交易所行情走势与技术指标`;
             document.getElementById('chartModal').classList.remove('hidden');
             document.getElementById('chartModal').classList.add('flex');
+
+            // 每次打开默认重置为日线
+            chartCurrentPeriod = 'daily';
+            updatePeriodBtnStyles('daily');
 
             setTimeout(() => {
                 initOrUpdateKline(code, currentPrice > 0 ? currentPrice : 10.0);
@@ -573,10 +579,37 @@
         function closeChartModal() {
             document.getElementById('chartModal').classList.remove('flex');
             document.getElementById('chartModal').classList.add('hidden');
+            activeModalCode = null;
             if (activeChart) {
                 klinecharts.dispose('kline-chart-container');
                 activeChart = null;
             }
+        }
+
+        // 切换 K 线周期
+        function switchChartPeriod(period) {
+            chartCurrentPeriod = period;
+            updatePeriodBtnStyles(period);
+            
+            if (activeChart && activeModalCode) {
+                const currentPrice = realQuotes[activeModalCode] ? realQuotes[activeModalCode].price : 10.0;
+                const newData = generateKlineMockData(currentPrice, period);
+                activeChart.applyNewData(newData);
+            }
+        }
+
+        // 更新周期按钮样式
+        function updatePeriodBtnStyles(activePeriod) {
+            ['120m', 'daily', 'weekly', 'yearly'].forEach(p => {
+                const btn = document.getElementById(`c-btn-period-${p}`);
+                if (btn) {
+                    if (p === activePeriod) {
+                        btn.className = "px-2.5 py-1 rounded bg-emerald-600 text-white font-bold border border-emerald-500 transition";
+                    } else {
+                        btn.className = "px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-600 transition";
+                    }
+                }
+            });
         }
 
         function initOrUpdateKline(code, basePrice) {
@@ -597,8 +630,8 @@
                     candle: {
                         type: 'candle_solid',
                         bar: {
-                            upColor: '#10b981',        // 涨（绿）
-                            downColor: '#ef4444',      // 跌（红）
+                            upColor: '#10b981',
+                            downColor: '#ef4444',
                             noChangeColor: '#888888',
                             upBorderColor: '#10b981',
                             downBorderColor: '#ef4444',
@@ -615,7 +648,8 @@
                 }
             });
 
-            const data = generateKlineMockData(basePrice);
+            // 获取符合当前周期的模拟数据
+            const data = generateKlineMockData(basePrice, chartCurrentPeriod);
             activeChart.applyNewData(data);
 
             // 默认开启 BOLL 主图与 VOL、MACD 副图
@@ -632,21 +666,48 @@
             updateSubIndicatorBtnStyle('KDJ', false);
         }
 
-        function generateKlineMockData(lastPrice) {
+        // 根据不同周期生成不同的自适应模拟数据
+        function generateKlineMockData(lastPrice, period = 'daily') {
             const data = [];
-            let baseTime = new Date().getTime() - 250 * 24 * 60 * 60 * 1000;
-            let current = lastPrice * 0.88;
+            let count = 250;
+            let interval = 24 * 60 * 60 * 1000; // 默认日线间隔 (毫秒)
+            let volatility = 0.035; // 默认价格日波动率
+            let volBase = 1000000;
+            let volMulti = 8000000;
 
-            for (let i = 0; i < 250; i++) {
-                const changeRatio = (Math.random() - 0.48) * 0.035;
+            if (period === '120m') {
+                interval = 2 * 60 * 60 * 1000;
+                count = 120;
+                volatility = 0.015; // 120分线波动率较小
+                volBase = 500000;
+            } else if (period === 'weekly') {
+                interval = 7 * 24 * 60 * 60 * 1000;
+                count = 150;
+                volatility = 0.06; // 周线波动较大
+                volBase *= 5;
+                volMulti *= 5;
+            } else if (period === 'yearly') {
+                interval = 365 * 24 * 60 * 60 * 1000;
+                count = 25; // 年线只显示近二十几年
+                volatility = 0.25; // 年线波动极大
+                volBase *= 250;
+                volMulti *= 250;
+            }
+
+            let baseTime = new Date().getTime() - (count * interval);
+            // 随机一个开局起点，避免每次看图起点都一样
+            let current = lastPrice * (1 - (Math.random() * 0.4 - 0.2)); 
+
+            for (let i = 0; i < count; i++) {
+                const changeRatio = (Math.random() - 0.48) * volatility;
                 const open = current;
                 const close = open * (1 + changeRatio);
-                const high = Math.max(open, close) * (1 + Math.random() * 0.012);
-                const low = Math.min(open, close) * (1 - Math.random() * 0.012);
-                const volume = Math.floor(Math.random() * 8000000) + 1000000;
+                const high = Math.max(open, close) * (1 + Math.random() * (volatility * 0.3));
+                const low = Math.min(open, close) * (1 - Math.random() * (volatility * 0.3));
+                const volume = Math.floor(Math.random() * volMulti) + volBase;
 
                 data.push({
-                    timestamp: baseTime + i * 24 * 60 * 60 * 1000,
+                    timestamp: baseTime + i * interval,
                     open: Number(open.toFixed(3)),
                     high: Number(high.toFixed(3)),
                     low: Number(low.toFixed(3)),
@@ -655,6 +716,7 @@
                 });
                 current = close;
             }
+            // 强制最后一根 K 线的收盘价为您当前的实时价
             if (data.length > 0) {
                 data[data.length - 1].close = Number(lastPrice.toFixed(3));
             }
@@ -719,7 +781,7 @@
             if (target) { target[key] = parseFloat(val) || 0; renderTable(); }
         }
 
-        // 弹窗与记账逻辑
+        // 记账逻辑
         function openModal(code, name) {
             activeModalCode = code;
             document.getElementById('modalTitle').innerText = `${name} (${code}) - 估值分析与多批次记账`;
@@ -855,7 +917,6 @@
             }
         }
 
-        // 定时轮询与初始化
         setInterval(() => {
             countdownSec--;
             if (countdownSec <= 0) { fetchTencentQuotes(); countdownSec = 5; }
