@@ -59,8 +59,8 @@
             <div class="bg-card p-4 rounded-xl border border-custom text-xs space-y-1.5 leading-relaxed">
                 <div class="font-bold text-rose-400 text-sm">🛡️ 止盈减仓与清仓规则</div>
                 <ul class="list-disc list-inside text-slate-300 space-y-1">
-                    <li><b>减1区域</b>（120分 $\ge 100$）：动量严重超买，减持当前持仓 <b>50%</b>。</li>
-                    <li><b>减2区域</b>（日线 $\ge 85$）：泡沫见顶，再次减持 <b>50%</b> 或<b>清仓</b>。</li>
+                    <li><b>减1区域</b>（120分 &ge; 100）：动量严重超买，减持当前持仓 <b>50%</b>。</li>
+                    <li><b>减2区域</b>（日线 &ge; 85）：泡沫见顶，再次减持 <b>50%</b> 或<b>清仓</b>。</li>
                     <li><b>纪律红线</b>：清仓后资金强制离场，绝不恋战。</li>
                 </ul>
             </div>
@@ -120,6 +120,8 @@
                             <!-- 动量系数与指令 -->
                             <th class="p-3 text-center sortable text-teal-300" onclick="handleSort('c120')">120m ↕</th>
                             <th class="p-3 text-center sortable text-emerald-300" onclick="handleSort('cDaily')">日线 ↕</th>
+                            <th class="p-3 text-center sortable text-indigo-300" onclick="handleSort('cWeekly')">周线 ↕</th>
+                            <th class="p-3 text-center sortable text-purple-300" onclick="handleSort('cYearly')">年线 ↕</th>
                             <th class="p-3">交易逻辑指令</th>
                             <th class="p-3 text-center">走势图与记账</th>
                         </tr>
@@ -134,6 +136,7 @@
 
     <!-- 弹窗：交易所风格 K线走势图与指标 -->
     <div id="chartModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <!-- ... 原 K线弹窗代码保持不变 ... -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-5xl w-full p-5 space-y-4 shadow-2xl text-slate-100 max-h-[95vh] flex flex-col">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <div class="flex items-center gap-3">
@@ -143,7 +146,6 @@
                 <button onclick="closeChartModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
             </div>
             
-            <!-- 图表工具栏：主副图指标切换 -->
             <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-xl border border-slate-700 text-xs">
                 <div class="flex items-center gap-2">
                     <span class="text-slate-400">主图指标:</span>
@@ -160,7 +162,6 @@
                 </div>
             </div>
 
-            <!-- K线图挂载容器 -->
             <div id="kline-chart-container" class="w-full h-[500px] bg-slate-900 rounded-xl border border-slate-700 overflow-hidden"></div>
 
             <div class="flex justify-end pt-1">
@@ -171,24 +172,22 @@
 
     <!-- 弹窗：批次投入日记账与估值深钻 -->
     <div id="noteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <!-- ... 原记账弹窗代码保持不变 ... -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 id="modalTitle" class="text-lg font-bold text-emerald-400">板块详情与记账</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
             </div>
             
-            <!-- 估值多维度分析面板 -->
             <div class="bg-slate-900/90 p-4 rounded-xl border border-slate-700 space-y-3">
                 <div class="text-xs font-bold text-cyan-400 flex justify-between items-center">
                     <span>📊 估值指标全周期分析面板</span>
                     <span id="modalValuationBadge" class="px-2 py-0.5 rounded text-[10px]">--</span>
                 </div>
                 <div id="modalValuationGrid" class="grid grid-cols-3 gap-3 text-xs">
-                    <!-- 动态注入PE/PB/股息率卡片 -->
                 </div>
             </div>
 
-            <!-- 持仓与盈亏汇总卡片 -->
             <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700 flex justify-between items-center text-xs">
                 <div>
                     <span class="text-slate-400 block">当前最新股价</span>
@@ -204,7 +203,6 @@
                 </div>
             </div>
 
-            <!-- 添加新批次表单 -->
             <div class="grid grid-cols-3 gap-2 bg-slate-900 p-3 rounded-lg border border-slate-700 items-end text-xs">
                 <div>
                     <label class="text-slate-400 block mb-1">投入日期</label>
@@ -223,7 +221,6 @@
                 </div>
             </div>
 
-            <!-- 批次记录列表 -->
             <div class="max-h-40 overflow-y-auto space-y-1 pr-1 text-xs">
                 <table class="w-full text-left">
                     <thead class="text-slate-400 border-b border-slate-700">
@@ -236,7 +233,6 @@
                         </tr>
                     </thead>
                     <tbody id="batchTableBody" class="divide-y divide-slate-700/50">
-                        <!-- 动态注入 -->
                     </tbody>
                 </table>
             </div>
@@ -248,47 +244,47 @@
     </div>
 
     <script>
-        // 数据集
+        // 数据集：加入 cWeekly (周线) 和 cYearly (年线) 的默认值
         const etfData = [
-            { num: 1, name: "医药ETF易方达", code: "SH512010", c120: 80, cDaily: 86.19, pe: 26.5, pePct: { '2Y': 18, '5Y': 12, '10Y': 15 }, pb: 3.1, pbPct: { '2Y': 15, '5Y': 10, '10Y': 14 }, divYield: 1.2, divPct: { '2Y': 75, '5Y': 82, '10Y': 88 } },
-            { num: 2, name: "证券ETF国泰", code: "SH512880", c120: 95, cDaily: 102.23, pe: 18.2, pePct: { '2Y': 82, '5Y': 75, '10Y': 68 }, pb: 1.3, pbPct: { '2Y': 70, '5Y': 62, '10Y': 55 }, divYield: 2.1, divPct: { '2Y': 40, '5Y': 45, '10Y': 50 } },
-            { num: 3, name: "恒生科技指数ETF", code: "SH513180", c120: 88, cDaily: 90.70, pe: 24.8, pePct: { '2Y': 35, '5Y': 22, '10Y': 20 }, pb: 2.2, pbPct: { '2Y': 30, '5Y': 18, '10Y': 16 }, divYield: 0.8, divPct: { '2Y': 60, '5Y': 70, '10Y': 72 } },
-            { num: 4, name: "黄金ETF华安", code: "SH518880", c120: 60, cDaily: 63.23, pe: 0, pePct: { '2Y': 90, '5Y': 95, '10Y': 96 }, pb: 0, pbPct: { '2Y': 90, '5Y': 95, '10Y': 96 }, divYield: 0, divPct: { '2Y': 0, '5Y': 0, '10Y': 0 } },
-            { num: 5, name: "酒ETF", code: "SH512690", c120: 90, cDaily: 92.74, pe: 21.4, pePct: { '2Y': 25, '5Y': 18, '10Y': 30 }, pb: 5.2, pbPct: { '2Y': 22, '5Y': 15, '10Y': 28 }, divYield: 3.1, divPct: { '2Y': 85, '5Y': 90, '10Y': 86 } },
-            { num: 6, name: "卫星ETF永赢", code: "SZ159206", c120: 50, cDaily: 56.98, pe: 55.2, pePct: { '2Y': 65, '5Y': 58, '10Y': 60 }, pb: 3.8, pbPct: { '2Y': 60, '5Y': 52, '10Y': 55 }, divYield: 0.3, divPct: { '2Y': 20, '5Y': 30, '10Y': 30 } },
-            { num: 7, name: "光伏ETF华泰柏瑞", code: "SH515790", c120: 15, cDaily: 15.87, pe: 12.1, pePct: { '2Y': 8, '5Y': 5, '10Y': 6 }, pb: 1.8, pbPct: { '2Y': 6, '5Y': 4, '10Y': 5 }, divYield: 2.8, divPct: { '2Y': 92, '5Y': 96, '10Y': 95 } },
-            { num: 8, name: "养殖ETF国泰", code: "SZ159865", c120: 42, cDaily: 45.81, pe: 16.5, pePct: { '2Y': 30, '5Y': 25, '10Y': 32 }, pb: 2.7, pbPct: { '2Y': 28, '5Y': 20, '10Y': 26 }, divYield: 1.5, divPct: { '2Y': 50, '5Y': 60, '10Y': 58 } },
-            { num: 9, name: "农业ETF富国", code: "SZ159825", c120: 40, cDaily: 42.45, pe: 18.0, pePct: { '2Y': 32, '5Y': 28, '10Y': 35 }, pb: 2.4, pbPct: { '2Y': 29, '5Y': 22, '10Y': 30 }, divYield: 1.8, divPct: { '2Y': 55, '5Y': 65, '10Y': 62 } },
-            { num: 10, name: "航空航天ETF", code: "SZ159227", c120: 55, cDaily: 58.80, pe: 48.0, pePct: { '2Y': 45, '5Y': 40, '10Y': 42 }, pb: 3.2, pbPct: { '2Y': 40, '5Y': 35, '10Y': 38 }, divYield: 0.6, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } },
-            { num: 11, name: "人工智能ETF", code: "SH515980", c120: 65, cDaily: 66.94, pe: 42.1, pePct: { '2Y': 72, '5Y': 65, '10Y': 68 }, pb: 3.9, pbPct: { '2Y': 68, '5Y': 60, '10Y': 62 }, divYield: 0.5, divPct: { '2Y': 25, '5Y': 35, '10Y': 35 } },
-            { num: 12, name: "创新药ETF", code: "SZ159992", c120: 80, cDaily: 83.44, pe: 28.3, pePct: { '2Y': 20, '5Y': 14, '10Y': 16 }, pb: 3.3, pbPct: { '2Y': 18, '5Y': 12, '10Y': 15 }, divYield: 0.9, divPct: { '2Y': 70, '5Y': 80, '10Y': 82 } },
-            { num: 13, name: "软件ETF嘉实", code: "SZ159852", c120: 90, cDaily: 93.51, pe: 50.4, pePct: { '2Y': 78, '5Y': 70, '10Y': 72 }, pb: 4.1, pbPct: { '2Y': 74, '5Y': 65, '10Y': 68 }, divYield: 0.4, divPct: { '2Y': 20, '5Y': 30, '10Y': 30 } },
-            { num: 14, name: "恒生医疗ETF博时", code: "SH513060", c120: 85, cDaily: 87.17, pe: 22.0, pePct: { '2Y': 12, '5Y': 8, '10Y': 10 }, pb: 2.1, pbPct: { '2Y': 10, '5Y': 6, '10Y': 8 }, divYield: 0.5, divPct: { '2Y': 80, '5Y': 85, '10Y': 88 } },
-            { num: 15, name: "军工ETF国泰", code: "SH512660", c120: 52, cDaily: 56.59, pe: 45.2, pePct: { '2Y': 40, '5Y': 32, '10Y': 36 }, pb: 2.9, pbPct: { '2Y': 35, '5Y': 28, '10Y': 32 }, divYield: 0.7, divPct: { '2Y': 40, '5Y': 50, '10Y': 50 } },
-            { num: 16, name: "煤炭ETF国泰", code: "SH515220", c120: 8, cDaily: 9.52, pe: 9.8, pePct: { '2Y': 85, '5Y': 78, '10Y': 70 }, pb: 1.4, pbPct: { '2Y': 80, '5Y': 72, '10Y': 65 }, divYield: 6.8, divPct: { '2Y': 90, '5Y': 95, '10Y': 92 } },
-            { num: 17, name: "传媒ETF广发", code: "SH512980", c120: 78, cDaily: 80.62, pe: 25.6, pePct: { '2Y': 60, '5Y': 50, '10Y': 45 }, pb: 2.3, pbPct: { '2Y': 55, '5Y': 45, '10Y': 40 }, divYield: 1.4, divPct: { '2Y': 45, '5Y': 55, '10Y': 55 } },
-            { num: 18, name: "通信ETF国泰", code: "SH515880", c120: 20, cDaily: 23.84, pe: 28.1, pePct: { '2Y': 70, '5Y': 62, '10Y': 58 }, pb: 2.6, pbPct: { '2Y': 65, '5Y': 58, '10Y': 52 }, divYield: 1.6, divPct: { '2Y': 40, '5Y': 50, '10Y': 50 } },
-            { num: 19, name: "芯片ETF", code: "SZ159995", c120: 65, cDaily: 68.52, pe: 46.3, pePct: { '2Y': 52, '5Y': 42, '10Y': 45 }, pb: 3.5, pbPct: { '2Y': 48, '5Y': 38, '10Y': 40 }, divYield: 0.5, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } },
-            { num: 20, name: "创业板50ETF华安", code: "SZ159949", c120: 25, cDaily: 29.12, pe: 25.1, pePct: { '2Y': 15, '5Y': 10, '10Y': 12 }, pb: 3.6, pbPct: { '2Y': 12, '5Y': 8, '10Y': 10 }, divYield: 1.1, divPct: { '2Y': 75, '5Y': 85, '10Y': 82 } },
-            { num: 21, name: "黄金股ETF永赢", code: "SH517520", c120: 72, cDaily: 77.71, pe: 28.9, pePct: { '2Y': 82, '5Y': 88, '10Y': 85 }, pb: 2.4, pbPct: { '2Y': 80, '5Y': 84, '10Y': 82 }, divYield: 1.5, divPct: { '2Y': 35, '5Y': 40, '10Y': 40 } },
-            { num: 22, name: "化工ETF", code: "SZ159870", c120: 32, cDaily: 35.16, pe: 17.2, pePct: { '2Y': 28, '5Y': 22, '10Y': 25 }, pb: 1.8, pbPct: { '2Y': 22, '5Y': 18, '10Y': 20 }, divYield: 2.5, divPct: { '2Y': 70, '5Y': 80, '10Y': 78 } },
-            { num: 23, name: "半导体ETF", code: "SH512480", c120: 55, cDaily: 59.89, pe: 48.1, pePct: { '2Y': 55, '5Y': 45, '10Y': 48 }, pb: 3.7, pbPct: { '2Y': 50, '5Y': 40, '10Y': 42 }, divYield: 0.4, divPct: { '2Y': 25, '5Y': 35, '10Y': 35 } },
-            { num: 24, name: "机器人ETF", code: "SH562500", c120: 70, cDaily: 73.87, pe: 41.0, pePct: { '2Y': 68, '5Y': 60, '10Y': 62 }, pb: 3.3, pbPct: { '2Y': 62, '5Y': 55, '10Y': 58 }, divYield: 0.6, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } },
-            { num: 25, name: "半导体设备ETF国泰", code: "SZ159516", c120: 48, cDaily: 52.27, pe: 38.5, pePct: { '2Y': 42, '5Y': 35, '10Y': 38 }, pb: 4.2, pbPct: { '2Y': 40, '5Y': 32, '10Y': 35 }, divYield: 0.3, divPct: { '2Y': 20, '5Y': 30, '10Y': 30 } },
-            { num: 26, name: "有色金属ETF", code: "SH512400", c120: 62, cDaily: 67.53, pe: 16.8, pePct: { '2Y': 62, '5Y': 55, '10Y': 50 }, pb: 2.1, pbPct: { '2Y': 58, '5Y': 50, '10Y': 45 }, divYield: 2.2, divPct: { '2Y': 50, '5Y': 60, '10Y': 58 } },
-            { num: 27, name: "电网设备ETF", code: "SZ159326", c120: 18, cDaily: 21.44, pe: 22.4, pePct: { '2Y': 20, '5Y': 16, '10Y': 18 }, pb: 2.2, pbPct: { '2Y': 18, '5Y': 14, '10Y': 16 }, divYield: 2.0, divPct: { '2Y': 65, '5Y': 75, '10Y': 72 } },
-            { num: 28, name: "港股创新药ETF广发", code: "SH513120", c120: 78, cDaily: 81.80, pe: 24.0, pePct: { '2Y': 15, '5Y': 10, '10Y': 12 }, pb: 1.9, pbPct: { '2Y': 12, '5Y': 8, '10Y': 10 }, divYield: 0.4, divPct: { '2Y': 70, '5Y': 80, '10Y': 82 } },
-            { num: 29, name: "中概互联网ETF易方达", code: "SH513050", c120: 89, cDaily: 91.85, pe: 20.2, pePct: { '2Y': 22, '5Y': 15, '10Y': 18 }, pb: 1.8, pbPct: { '2Y': 18, '5Y': 12, '10Y': 15 }, divYield: 1.1, divPct: { '2Y': 75, '5Y': 85, '10Y': 85 } },
-            { num: 30, name: "沪深300ETF华泰柏瑞", code: "SH510300", c120: 58, cDaily: 60.25, pe: 12.4, pePct: { '2Y': 42, '5Y': 36, '10Y': 38 }, pb: 1.3, pbPct: { '2Y': 35, '5Y': 28, '10Y': 30 }, divYield: 3.0, divPct: { '2Y': 68, '5Y': 78, '10Y': 75 } },
-            { num: 31, name: "中证1000ETF", code: "SZ159845", c120: 40, cDaily: 42.61, pe: 29.8, pePct: { '2Y': 25, '5Y': 20, '10Y': 22 }, pb: 1.9, pbPct: { '2Y': 20, '5Y': 16, '10Y': 18 }, divYield: 1.4, divPct: { '2Y': 60, '5Y': 70, '10Y': 68 } },
-            { num: 32, name: "创业板ETF易方达", code: "SZ159915", c120: 24, cDaily: 27.03, pe: 27.5, pePct: { '2Y': 12, '5Y': 8, '10Y': 10 }, pb: 3.8, pbPct: { '2Y': 10, '5Y': 6, '10Y': 8 }, divYield: 1.0, divPct: { '2Y': 80, '5Y': 88, '10Y': 85 } },
-            { num: 33, name: "中证1000ETF", code: "SH512100", c120: 40, cDaily: 42.16, pe: 29.8, pePct: { '2Y': 25, '5Y': 20, '10Y': 22 }, pb: 1.9, pbPct: { '2Y': 20, '5Y': 16, '10Y': 18 }, divYield: 1.4, divPct: { '2Y': 60, '5Y': 70, '10Y': 68 } },
-            { num: 34, name: "上证50ETF", code: "SH510050", c120: 98, cDaily: 99.80, pe: 10.5, pePct: { '2Y': 55, '5Y': 48, '10Y': 50 }, pb: 1.1, pbPct: { '2Y': 45, '5Y': 38, '10Y': 40 }, divYield: 3.8, divPct: { '2Y': 62, '5Y': 72, '10Y': 70 } },
-            { num: 35, name: "科创50ETF", code: "SH588000", c120: 74, cDaily: 77.07, pe: 44.2, pePct: { '2Y': 30, '5Y': 22, '10Y': 25 }, pb: 3.4, pbPct: { '2Y': 25, '5Y': 18, '10Y': 20 }, divYield: 0.6, divPct: { '2Y': 65, '5Y': 75, '10Y': 75 } },
-            { num: 36, name: "纳指ETF广发", code: "SZ159941", c120: 100, cDaily: 103.74, pe: 32.5, pePct: { '2Y': 88, '5Y': 92, '10Y': 94 }, pb: 7.2, pbPct: { '2Y': 85, '5Y': 90, '10Y': 92 }, divYield: 0.6, divPct: { '2Y': 15, '5Y': 20, '10Y': 20 } },
-            { num: 37, name: "中证500ETF", code: "SH510500", c120: 38, cDaily: 40.52, pe: 22.1, pePct: { '2Y': 22, '5Y': 18, '10Y': 20 }, pb: 1.6, pbPct: { '2Y': 18, '5Y': 14, '10Y': 16 }, divYield: 1.8, divPct: { '2Y': 65, '5Y': 75, '10Y': 72 } },
-            { num: 38, name: "恒生ETF", code: "SZ159920", c120: 88, cDaily: 91.22, pe: 9.2, pePct: { '2Y': 35, '5Y': 28, '10Y': 25 }, pb: 0.9, pbPct: { '2Y': 25, '5Y': 18, '10Y': 15 }, divYield: 3.9, divPct: { '2Y': 72, '5Y': 82, '10Y': 85 } },
-            { num: 39, name: "游戏ETF", code: "SZ159869", c120: 92, cDaily: 95.27, pe: 27.4, pePct: { '2Y': 75, '5Y': 68, '10Y': 70 }, pb: 2.8, pbPct: { '2Y': 70, '5Y': 62, '10Y': 65 }, divYield: 1.0, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } }
+            { num: 1, name: "医药ETF易方达", code: "SH512010", c120: 80, cDaily: 86.19, cWeekly: 81.5, cYearly: 75.0, pe: 26.5, pePct: { '2Y': 18, '5Y': 12, '10Y': 15 }, pb: 3.1, pbPct: { '2Y': 15, '5Y': 10, '10Y': 14 }, divYield: 1.2, divPct: { '2Y': 75, '5Y': 82, '10Y': 88 } },
+            { num: 2, name: "证券ETF国泰", code: "SH512880", c120: 95, cDaily: 102.23, cWeekly: 90.1, cYearly: 85.5, pe: 18.2, pePct: { '2Y': 82, '5Y': 75, '10Y': 68 }, pb: 1.3, pbPct: { '2Y': 70, '5Y': 62, '10Y': 55 }, divYield: 2.1, divPct: { '2Y': 40, '5Y': 45, '10Y': 50 } },
+            { num: 3, name: "恒生科技指数ETF", code: "SH513180", c120: 88, cDaily: 90.70, cWeekly: 85.0, cYearly: 78.2, pe: 24.8, pePct: { '2Y': 35, '5Y': 22, '10Y': 20 }, pb: 2.2, pbPct: { '2Y': 30, '5Y': 18, '10Y': 16 }, divYield: 0.8, divPct: { '2Y': 60, '5Y': 70, '10Y': 72 } },
+            { num: 4, name: "黄金ETF华安", code: "SH518880", c120: 60, cDaily: 63.23, cWeekly: 58.4, cYearly: 55.0, pe: 0, pePct: { '2Y': 90, '5Y': 95, '10Y': 96 }, pb: 0, pbPct: { '2Y': 90, '5Y': 95, '10Y': 96 }, divYield: 0, divPct: { '2Y': 0, '5Y': 0, '10Y': 0 } },
+            { num: 5, name: "酒ETF", code: "SH512690", c120: 90, cDaily: 92.74, cWeekly: 88.0, cYearly: 80.5, pe: 21.4, pePct: { '2Y': 25, '5Y': 18, '10Y': 30 }, pb: 5.2, pbPct: { '2Y': 22, '5Y': 15, '10Y': 28 }, divYield: 3.1, divPct: { '2Y': 85, '5Y': 90, '10Y': 86 } },
+            { num: 6, name: "卫星ETF永赢", code: "SZ159206", c120: 50, cDaily: 56.98, cWeekly: 52.1, cYearly: 48.0, pe: 55.2, pePct: { '2Y': 65, '5Y': 58, '10Y': 60 }, pb: 3.8, pbPct: { '2Y': 60, '5Y': 52, '10Y': 55 }, divYield: 0.3, divPct: { '2Y': 20, '5Y': 30, '10Y': 30 } },
+            { num: 7, name: "光伏ETF华泰柏瑞", code: "SH515790", c120: 15, cDaily: 15.87, cWeekly: 18.5, cYearly: 22.0, pe: 12.1, pePct: { '2Y': 8, '5Y': 5, '10Y': 6 }, pb: 1.8, pbPct: { '2Y': 6, '5Y': 4, '10Y': 5 }, divYield: 2.8, divPct: { '2Y': 92, '5Y': 96, '10Y': 95 } },
+            { num: 8, name: "养殖ETF国泰", code: "SZ159865", c120: 42, cDaily: 45.81, cWeekly: 40.2, cYearly: 35.8, pe: 16.5, pePct: { '2Y': 30, '5Y': 25, '10Y': 32 }, pb: 2.7, pbPct: { '2Y': 28, '5Y': 20, '10Y': 26 }, divYield: 1.5, divPct: { '2Y': 50, '5Y': 60, '10Y': 58 } },
+            { num: 9, name: "农业ETF富国", code: "SZ159825", c120: 40, cDaily: 42.45, cWeekly: 38.5, cYearly: 32.1, pe: 18.0, pePct: { '2Y': 32, '5Y': 28, '10Y': 35 }, pb: 2.4, pbPct: { '2Y': 29, '5Y': 22, '10Y': 30 }, divYield: 1.8, divPct: { '2Y': 55, '5Y': 65, '10Y': 62 } },
+            { num: 10, name: "航空航天ETF", code: "SZ159227", c120: 55, cDaily: 58.80, cWeekly: 52.0, cYearly: 46.5, pe: 48.0, pePct: { '2Y': 45, '5Y': 40, '10Y': 42 }, pb: 3.2, pbPct: { '2Y': 40, '5Y': 35, '10Y': 38 }, divYield: 0.6, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } },
+            { num: 11, name: "人工智能ETF", code: "SH515980", c120: 65, cDaily: 66.94, cWeekly: 60.1, cYearly: 55.2, pe: 42.1, pePct: { '2Y': 72, '5Y': 65, '10Y': 68 }, pb: 3.9, pbPct: { '2Y': 68, '5Y': 60, '10Y': 62 }, divYield: 0.5, divPct: { '2Y': 25, '5Y': 35, '10Y': 35 } },
+            { num: 12, name: "创新药ETF", code: "SZ159992", c120: 80, cDaily: 83.44, cWeekly: 75.8, cYearly: 68.0, pe: 28.3, pePct: { '2Y': 20, '5Y': 14, '10Y': 16 }, pb: 3.3, pbPct: { '2Y': 18, '5Y': 12, '10Y': 15 }, divYield: 0.9, divPct: { '2Y': 70, '5Y': 80, '10Y': 82 } },
+            { num: 13, name: "软件ETF嘉实", code: "SZ159852", c120: 90, cDaily: 93.51, cWeekly: 85.2, cYearly: 78.6, pe: 50.4, pePct: { '2Y': 78, '5Y': 70, '10Y': 72 }, pb: 4.1, pbPct: { '2Y': 74, '5Y': 65, '10Y': 68 }, divYield: 0.4, divPct: { '2Y': 20, '5Y': 30, '10Y': 30 } },
+            { num: 14, name: "恒生医疗ETF博时", code: "SH513060", c120: 85, cDaily: 87.17, cWeekly: 80.5, cYearly: 72.1, pe: 22.0, pePct: { '2Y': 12, '5Y': 8, '10Y': 10 }, pb: 2.1, pbPct: { '2Y': 10, '5Y': 6, '10Y': 8 }, divYield: 0.5, divPct: { '2Y': 80, '5Y': 85, '10Y': 88 } },
+            { num: 15, name: "军工ETF国泰", code: "SH512660", c120: 52, cDaily: 56.59, cWeekly: 50.1, cYearly: 42.8, pe: 45.2, pePct: { '2Y': 40, '5Y': 32, '10Y': 36 }, pb: 2.9, pbPct: { '2Y': 35, '5Y': 28, '10Y': 32 }, divYield: 0.7, divPct: { '2Y': 40, '5Y': 50, '10Y': 50 } },
+            { num: 16, name: "煤炭ETF国泰", code: "SH515220", c120: 8, cDaily: 9.52, cWeekly: 12.4, cYearly: 18.0, pe: 9.8, pePct: { '2Y': 85, '5Y': 78, '10Y': 70 }, pb: 1.4, pbPct: { '2Y': 80, '5Y': 72, '10Y': 65 }, divYield: 6.8, divPct: { '2Y': 90, '5Y': 95, '10Y': 92 } },
+            { num: 17, name: "传媒ETF广发", code: "SH512980", c120: 78, cDaily: 80.62, cWeekly: 72.5, cYearly: 65.0, pe: 25.6, pePct: { '2Y': 60, '5Y': 50, '10Y': 45 }, pb: 2.3, pbPct: { '2Y': 55, '5Y': 45, '10Y': 40 }, divYield: 1.4, divPct: { '2Y': 45, '5Y': 55, '10Y': 55 } },
+            { num: 18, name: "通信ETF国泰", code: "SH515880", c120: 20, cDaily: 23.84, cWeekly: 28.1, cYearly: 32.5, pe: 28.1, pePct: { '2Y': 70, '5Y': 62, '10Y': 58 }, pb: 2.6, pbPct: { '2Y': 65, '5Y': 58, '10Y': 52 }, divYield: 1.6, divPct: { '2Y': 40, '5Y': 50, '10Y': 50 } },
+            { num: 19, name: "芯片ETF", code: "SZ159995", c120: 65, cDaily: 68.52, cWeekly: 62.1, cYearly: 55.4, pe: 46.3, pePct: { '2Y': 52, '5Y': 42, '10Y': 45 }, pb: 3.5, pbPct: { '2Y': 48, '5Y': 38, '10Y': 40 }, divYield: 0.5, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } },
+            { num: 20, name: "创业板50ETF华安", code: "SZ159949", c120: 25, cDaily: 29.12, cWeekly: 35.0, cYearly: 40.2, pe: 25.1, pePct: { '2Y': 15, '5Y': 10, '10Y': 12 }, pb: 3.6, pbPct: { '2Y': 12, '5Y': 8, '10Y': 10 }, divYield: 1.1, divPct: { '2Y': 75, '5Y': 85, '10Y': 82 } },
+            { num: 21, name: "黄金股ETF永赢", code: "SH517520", c120: 72, cDaily: 77.71, cWeekly: 70.5, cYearly: 62.1, pe: 28.9, pePct: { '2Y': 82, '5Y': 88, '10Y': 85 }, pb: 2.4, pbPct: { '2Y': 80, '5Y': 84, '10Y': 82 }, divYield: 1.5, divPct: { '2Y': 35, '5Y': 40, '10Y': 40 } },
+            { num: 22, name: "化工ETF", code: "SZ159870", c120: 32, cDaily: 35.16, cWeekly: 40.2, cYearly: 45.1, pe: 17.2, pePct: { '2Y': 28, '5Y': 22, '10Y': 25 }, pb: 1.8, pbPct: { '2Y': 22, '5Y': 18, '10Y': 20 }, divYield: 2.5, divPct: { '2Y': 70, '5Y': 80, '10Y': 78 } },
+            { num: 23, name: "半导体ETF", code: "SH512480", c120: 55, cDaily: 59.89, cWeekly: 54.2, cYearly: 48.0, pe: 48.1, pePct: { '2Y': 55, '5Y': 45, '10Y': 48 }, pb: 3.7, pbPct: { '2Y': 50, '5Y': 40, '10Y': 42 }, divYield: 0.4, divPct: { '2Y': 25, '5Y': 35, '10Y': 35 } },
+            { num: 24, name: "机器人ETF", code: "SH562500", c120: 70, cDaily: 73.87, cWeekly: 68.0, cYearly: 60.5, pe: 41.0, pePct: { '2Y': 68, '5Y': 60, '10Y': 62 }, pb: 3.3, pbPct: { '2Y': 62, '5Y': 55, '10Y': 58 }, divYield: 0.6, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } },
+            { num: 25, name: "半导体设备ETF国泰", code: "SZ159516", c120: 48, cDaily: 52.27, cWeekly: 47.1, cYearly: 40.8, pe: 38.5, pePct: { '2Y': 42, '5Y': 35, '10Y': 38 }, pb: 4.2, pbPct: { '2Y': 40, '5Y': 32, '10Y': 35 }, divYield: 0.3, divPct: { '2Y': 20, '5Y': 30, '10Y': 30 } },
+            { num: 26, name: "有色金属ETF", code: "SH512400", c120: 62, cDaily: 67.53, cWeekly: 60.5, cYearly: 55.2, pe: 16.8, pePct: { '2Y': 62, '5Y': 55, '10Y': 50 }, pb: 2.1, pbPct: { '2Y': 58, '5Y': 50, '10Y': 45 }, divYield: 2.2, divPct: { '2Y': 50, '5Y': 60, '10Y': 58 } },
+            { num: 27, name: "电网设备ETF", code: "SZ159326", c120: 18, cDaily: 21.44, cWeekly: 26.5, cYearly: 30.1, pe: 22.4, pePct: { '2Y': 20, '5Y': 16, '10Y': 18 }, pb: 2.2, pbPct: { '2Y': 18, '5Y': 14, '10Y': 16 }, divYield: 2.0, divPct: { '2Y': 65, '5Y': 75, '10Y': 72 } },
+            { num: 28, name: "港股创新药ETF广发", code: "SH513120", c120: 78, cDaily: 81.80, cWeekly: 75.0, cYearly: 68.5, pe: 24.0, pePct: { '2Y': 15, '5Y': 10, '10Y': 12 }, pb: 1.9, pbPct: { '2Y': 12, '5Y': 8, '10Y': 10 }, divYield: 0.4, divPct: { '2Y': 70, '5Y': 80, '10Y': 82 } },
+            { num: 29, name: "中概互联网ETF易方达", code: "SH513050", c120: 89, cDaily: 91.85, cWeekly: 85.2, cYearly: 78.4, pe: 20.2, pePct: { '2Y': 22, '5Y': 15, '10Y': 18 }, pb: 1.8, pbPct: { '2Y': 18, '5Y': 12, '10Y': 15 }, divYield: 1.1, divPct: { '2Y': 75, '5Y': 85, '10Y': 85 } },
+            { num: 30, name: "沪深300ETF华泰柏瑞", code: "SH510300", c120: 58, cDaily: 60.25, cWeekly: 55.4, cYearly: 50.1, pe: 12.4, pePct: { '2Y': 42, '5Y': 36, '10Y': 38 }, pb: 1.3, pbPct: { '2Y': 35, '5Y': 28, '10Y': 30 }, divYield: 3.0, divPct: { '2Y': 68, '5Y': 78, '10Y': 75 } },
+            { num: 31, name: "中证1000ETF", code: "SZ159845", c120: 40, cDaily: 42.61, cWeekly: 45.2, cYearly: 50.8, pe: 29.8, pePct: { '2Y': 25, '5Y': 20, '10Y': 22 }, pb: 1.9, pbPct: { '2Y': 20, '5Y': 16, '10Y': 18 }, divYield: 1.4, divPct: { '2Y': 60, '5Y': 70, '10Y': 68 } },
+            { num: 32, name: "创业板ETF易方达", code: "SZ159915", c120: 24, cDaily: 27.03, cWeekly: 32.5, cYearly: 40.1, pe: 27.5, pePct: { '2Y': 12, '5Y': 8, '10Y': 10 }, pb: 3.8, pbPct: { '2Y': 10, '5Y': 6, '10Y': 8 }, divYield: 1.0, divPct: { '2Y': 80, '5Y': 88, '10Y': 85 } },
+            { num: 33, name: "中证1000ETF", code: "SH512100", c120: 40, cDaily: 42.16, cWeekly: 45.0, cYearly: 48.5, pe: 29.8, pePct: { '2Y': 25, '5Y': 20, '10Y': 22 }, pb: 1.9, pbPct: { '2Y': 20, '5Y': 16, '10Y': 18 }, divYield: 1.4, divPct: { '2Y': 60, '5Y': 70, '10Y': 68 } },
+            { num: 34, name: "上证50ETF", code: "SH510050", c120: 98, cDaily: 99.80, cWeekly: 92.1, cYearly: 85.5, pe: 10.5, pePct: { '2Y': 55, '5Y': 48, '10Y': 50 }, pb: 1.1, pbPct: { '2Y': 45, '5Y': 38, '10Y': 40 }, divYield: 3.8, divPct: { '2Y': 62, '5Y': 72, '10Y': 70 } },
+            { num: 35, name: "科创50ETF", code: "SH588000", c120: 74, cDaily: 77.07, cWeekly: 70.5, cYearly: 62.8, pe: 44.2, pePct: { '2Y': 30, '5Y': 22, '10Y': 25 }, pb: 3.4, pbPct: { '2Y': 25, '5Y': 18, '10Y': 20 }, divYield: 0.6, divPct: { '2Y': 65, '5Y': 75, '10Y': 75 } },
+            { num: 36, name: "纳指ETF广发", code: "SZ159941", c120: 100, cDaily: 103.74, cWeekly: 95.0, cYearly: 88.2, pe: 32.5, pePct: { '2Y': 88, '5Y': 92, '10Y': 94 }, pb: 7.2, pbPct: { '2Y': 85, '5Y': 90, '10Y': 92 }, divYield: 0.6, divPct: { '2Y': 15, '5Y': 20, '10Y': 20 } },
+            { num: 37, name: "中证500ETF", code: "SH510500", c120: 38, cDaily: 40.52, cWeekly: 45.8, cYearly: 50.1, pe: 22.1, pePct: { '2Y': 22, '5Y': 18, '10Y': 20 }, pb: 1.6, pbPct: { '2Y': 18, '5Y': 14, '10Y': 16 }, divYield: 1.8, divPct: { '2Y': 65, '5Y': 75, '10Y': 72 } },
+            { num: 38, name: "恒生ETF", code: "SZ159920", c120: 88, cDaily: 91.22, cWeekly: 85.0, cYearly: 78.4, pe: 9.2, pePct: { '2Y': 35, '5Y': 28, '10Y': 25 }, pb: 0.9, pbPct: { '2Y': 25, '5Y': 18, '10Y': 15 }, divYield: 3.9, divPct: { '2Y': 72, '5Y': 82, '10Y': 85 } },
+            { num: 39, name: "游戏ETF", code: "SZ159869", c120: 92, cDaily: 95.27, cWeekly: 88.5, cYearly: 80.1, pe: 27.4, pePct: { '2Y': 75, '5Y': 68, '10Y': 70 }, pb: 2.8, pbPct: { '2Y': 70, '5Y': 62, '10Y': 65 }, divYield: 1.0, divPct: { '2Y': 30, '5Y': 40, '10Y': 40 } }
         ];
 
         // 状态管理
@@ -522,7 +518,7 @@
                             <span class="px-2 py-0.5 rounded text-[11px] border ${valStatus.style}">${valStatus.label}</span>
                         </td>
 
-                        <!-- 动量系数修改框 -->
+                        <!-- 动量系数修改框 (新增周线与年线) -->
                         <td class="p-3 text-center">
                             <input type="number" value="${item.c120}" onchange="updateCoeff('${item.code}', 'c120', this.value)" 
                                 class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 w-14 font-mono text-xs text-center text-teal-300 focus:outline-none focus:border-emerald-500">
@@ -530,6 +526,14 @@
                         <td class="p-3 text-center">
                             <input type="number" value="${item.cDaily}" onchange="updateCoeff('${item.code}', 'cDaily', this.value)" 
                                 class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 w-14 font-mono text-xs text-center text-emerald-300 focus:outline-none focus:border-emerald-500">
+                        </td>
+                        <td class="p-3 text-center">
+                            <input type="number" value="${item.cWeekly}" onchange="updateCoeff('${item.code}', 'cWeekly', this.value)" 
+                                class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 w-14 font-mono text-xs text-center text-indigo-300 focus:outline-none focus:border-emerald-500">
+                        </td>
+                        <td class="p-3 text-center">
+                            <input type="number" value="${item.cYearly}" onchange="updateCoeff('${item.code}', 'cYearly', this.value)" 
+                                class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 w-14 font-mono text-xs text-center text-purple-300 focus:outline-none focus:border-emerald-500">
                         </td>
 
                         <!-- 逻辑指令 -->
@@ -554,7 +558,7 @@
         }
 
         // ==========================================
-        // 【新增】：KLineCharts 交互控制逻辑
+        // KLineCharts 交互控制逻辑
         // ==========================================
         function openChartModal(code, name, currentPrice) {
             document.getElementById('chartModalTitle').innerText = `${name} (${code}) - 交易所行情走势与技术指标`;
